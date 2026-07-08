@@ -1,0 +1,412 @@
+<style>
+  :root {
+    --rail: #0F141E;
+    --rail-line: #222b3a;
+    --ink: #1B2130;
+    --paper: #FAFAF8;
+    --surface: #FFFFFF;
+    --muted: #6A7180;
+    --muted-soft: #9AA0AC;
+    --line: #E6E7EB;
+    --accent: #26567F;
+    --accent-soft: #EAF1F7;
+    --up: #1E7A54;
+    --down: #C23B33;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- Rail ---------- */
+  .rail {
+    background: var(--rail);
+    color: #E8EAF0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--rail-line);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .rail-head {
+    padding: 26px 24px 20px;
+    border-bottom: 1px solid var(--rail-line);
+  }
+
+  .mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .mark svg { display: block; }
+
+  .rail-title {
+    font-family: var(--serif);
+    font-size: 21px;
+    line-height: 1.15;
+    letter-spacing: .2px;
+    margin: 0;
+    color: #F6F7FA;
+  }
+  .rail-sub {
+    margin: 4px 0 0;
+    font-size: 11px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--muted-soft);
+  }
+
+  .rail-list {
+    overflow-y: auto;
+    padding: 12px 0 24px;
+    flex: 1;
+  }
+
+  .month-label {
+    padding: 18px 24px 8px;
+    font-size: 10.5px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--muted-soft);
+  }
+
+  .entry {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: #C9CEDA;
+    padding: 11px 24px;
+    cursor: pointer;
+    font-family: var(--sans);
+    border-left: 2px solid transparent;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .entry:hover { background: rgba(255,255,255,.04); color: #fff; }
+  .entry:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .entry.active {
+    background: rgba(38,86,127,.22);
+    border-left-color: #5B9BD1;
+    color: #fff;
+  }
+  .entry .d-day {
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .entry .d-meta {
+    font-size: 12px;
+    color: var(--muted-soft);
+    margin-top: 2px;
+  }
+  .entry.active .d-meta { color: #AEC4DA; }
+
+  /* ---------- Reading pane ---------- */
+  .pane {
+    padding: 0;
+    overflow-x: hidden;
+  }
+  .pane-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 40px 96px;
+  }
+
+  .doc-kicker {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .doc-date {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.1;
+    margin: 0 0 8px;
+    text-wrap: balance;
+    letter-spacing: -.3px;
+  }
+  .doc-note {
+    font-size: 13px;
+    color: var(--muted);
+    padding-bottom: 26px;
+    margin-bottom: 34px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* rendered markdown */
+  .md { font-family: var(--serif); font-size: 18px; line-height: 1.72; color: #262d3d; }
+  .md h1 { font-size: 26px; line-height: 1.2; margin: 40px 0 12px; font-weight: 600; }
+  .md h2 {
+    font-size: 15px;
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 40px 0 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .md h3 { font-size: 19px; margin: 28px 0 6px; font-weight: 600; }
+  .md p { margin: 14px 0; }
+  .md ul { margin: 12px 0; padding-left: 4px; list-style: none; }
+  .md li {
+    position: relative;
+    padding-left: 26px;
+    margin: 9px 0;
+  }
+  .md li::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: .72em;
+    width: 7px;
+    height: 7px;
+    border: 1.5px solid var(--accent);
+    border-radius: 50%;
+  }
+  .md strong { font-weight: 700; color: var(--ink); }
+  .md em { font-style: italic; }
+  .md a { color: var(--accent); text-underline-offset: 2px; word-break: break-word; }
+  .md hr { border: none; border-top: 1px solid var(--line); margin: 30px 0; }
+  .md blockquote {
+    margin: 20px 0;
+    padding: 12px 18px;
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 15px;
+    font-family: var(--sans);
+    font-style: normal;
+    color: #3a4759;
+  }
+  .md blockquote p { margin: 4px 0; }
+  .md pre {
+    background: #0F141E;
+    color: #D7DCE6;
+    padding: 16px 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, monospace;
+    margin: 18px 0;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-family: var(--sans);
+    text-align: center;
+    padding: 120px 20px;
+  }
+
+  /* mobile nav (hidden on desktop) */
+  .mnav { display: none; }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .mnav {
+      display: block;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--rail);
+      color: #fff;
+      padding: 16px 18px 12px;
+    }
+    .mnav .rail-title { font-size: 18px; }
+    .mnav .rail-sub { margin-bottom: 12px; }
+    .chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chip {
+      flex: 0 0 auto;
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--rail-line);
+      color: #D4D9E3;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      font-family: var(--sans);
+      white-space: nowrap;
+    }
+    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .pane-inner { padding: 34px 22px 80px; }
+    .md { font-size: 17px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail-head">
+      <div class="mark">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <rect x="1" y="1" width="24" height="24" rx="6" stroke="#5B9BD1" stroke-width="1.3"/>
+          <path d="M5 17.5 L10 12 L13.5 15 L21 7" stroke="#5B9BD1" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="21" cy="7" r="2" fill="#5B9BD1"/>
+        </svg>
+        <div>
+          <h1 class="rail-title">Marchés &amp; Finance</h1>
+          <p class="rail-sub">Comptes rendus</p>
+        </div>
+      </div>
+    </div>
+    <nav class="rail-list" id="railList" aria-label="Liste des comptes rendus"></nav>
+  </aside>
+
+  <nav class="mnav" aria-label="Navigation mobile">
+    <h1 class="rail-title">Marchés &amp; Finance</h1>
+    <p class="rail-sub">Comptes rendus</p>
+    <div class="chips" id="chips"></div>
+  </nav>
+
+  <main class="pane">
+    <div class="pane-inner" id="pane"></div>
+  </main>
+</div>
+
+<script>
+  /* ====================================================================
+     DONNÉES — généré automatiquement par build-site.mjs.
+     Ne pas modifier à la main : lancer le script de génération à la place.
+     ==================================================================== */
+  const REPORTS = [{"date":"2026-07-07","titre":"CAC 40 · Crypto · Or","md":"CAC 40, Crypto, Or\n\n---\n\n## 1. Le fil conducteur du jour\n\nTrois forces se tirent la corde ce matin, et il faut les avoir en tête avant même de regarder les cours. La première, c'est ce chiffre de l'emploi américain publié vendredi dernier, qui a été franchement mauvais : seulement 57 000 créations de postes en juin quand les économistes en attendaient 110 000. C'est la statistique la plus faible depuis quatre mois, et elle a suffi à faire dévisser les paris sur une hausse de taux imminente de la Fed. La deuxième, c'est le tempérament de la nouvelle Réserve fédérale dirigée par Kevin Warsh, qui, contrairement à ce qu'on aurait pu croire, a durci le ton lors de la réunion de juin. Neuf gouverneurs sur dix-neuf voient désormais au moins une hausse de taux d'ici la fin de l'année, ce qui a provoqué un choc dans les esprits. La troisième force, enfin, c'est l'attentisme : cette semaine sera calme côté calendrier, avec les minutes de la Fed mercredi comme seul vrai rendez-vous, et les investisseurs préparent déjà l'artillerie pour le CPI américain du 14 juillet.\n\n## 2. CAC 40, un début de mois qui respire\n\nL'indice parisien a clôturé vendredi à 8 508 points, son plus haut niveau depuis fin février, dans un mouvement qui aurait pu sembler improbable il y a quelques jours à peine. Il faut se rappeler que le 1er juillet, le CAC perdait encore 0,79 %, chahuté par les craintes d'inflation. Puis jeudi, il a bondi de 1,7 % pour clôturer à 8 476, comme si l'inflation en zone euro se rapprochait enfin sagement de la cible de la BCE et que les tensions monétaires se relâchaient d'un cran. Vendredi, il a poursuivi son ascension avec un modeste +0,3 %. Ce petit rally n'a rien de spectaculaire, mais il traduit un vrai soulagement, celui d'un marché qui reprend son souffle.\n\nSur le plan technique, la lecture est mixte. Le signal quotidien de TradingView ressort en zone neutre, ce qui veut dire ni fièvre acheteuse ni panique vendeuse. Les niveaux à garder en tête :\n\n- **Résistance immédiate** : 8 600 points, le sommet historique, dernier verrou avant une nouvelle jambe de hausse\n- **Résistance intermédiaire** : la zone 8 400-8 500, où l'indice évolue déjà et qui a longtemps servi de plafond\n- **Support majeur** : 8 000 points, un niveau charnière qui a joué tantôt le rôle de plancher, tantôt de plafond ces derniers mois\n- **Support intermédiaire** : autour de 8 220 points, à surveiller en cas de repli\n\nLe scénario haussier est simple : si le CAC casse 8 600, il ouvre une nouvelle page. Le scénario baissier suppose une rechute sous 8 400, avec un test possible du plancher psychologique des 8 000.\n\n## 3. Crypto, le Bitcoin ploie sous le doute\n\n⚠️ **Alerte : le climat Bitcoin s'est nettement détérioré depuis la semaine dernière.** Les gros vents contraires sont revenus tous en même temps, et la peur domine à nouveau les carnets d'ordres.\n\nLe Bitcoin s'échange ce matin autour de **62 900 dollars**, quasiment à plat sur 24 heures mais sur un terrain devenu glissant. La grande banque Citi vient d'abaisser sa cible à douze mois de 112 000 à 82 000 dollars, ce qui n'est jamais une bonne nouvelle en soi, mais illustre surtout une chose : l'appétit institutionnel s'émousse. Les ETF Bitcoin américains viennent d'enchaîner dix journées consécutives de sorties nettes, drainant 2,73 milliards de dollars, avant un premier rebond timide jeudi 3 juillet avec 221 millions d'entrées, largement porté par le FBTC de Fidelity. Depuis le début de l'année, le solde net des ETF américains est déjà négatif de 5,4 milliards.\n\nIl y a pourtant un contre-courant fascinant. Les baleines, ces adresses qui détiennent plus de 100 BTC, ont accumulé 270 000 bitcoins en deux semaines autour de 59 000 dollars, soit près de 16,7 milliards de dollars. Le nombre de ces grosses adresses a atteint un plus haut de 2026 à 20 229. Autrement dit, pendant que Wall Street court vers la sortie via les ETF, la vieille garde crypto ramasse à la petite cuillère. Ce type de divergence précède rarement une chute violente, mais rarement non plus une envolée immédiate. C'est plutôt le décor typique d'une consolidation longue.\n\nTechniquement, la lecture est claire et sévère : TradingView renvoie un signal **strong sell** aussi bien sur les moyennes mobiles que sur les oscillateurs. Le Bitcoin est venu s'appuyer sur sa moyenne mobile 200 semaines à 62 457 dollars, considérée comme le dernier grand rempart avant le vide. En clair :\n\n- **Résistance** : 65 000 dollars d'abord, puis la zone 65 500-67 180 où s'agglutinent les moyennes 50 et 100 jours\n- **Support** : la MA 200 semaines à 62 457 dollars, puis 60 000 comme plancher psychologique, et enfin 58 359 dollars sur la bande basse de Bollinger\n\nUn scénario de rebond suppose un retour au-dessus de 65 000. Un scénario baissier plus sombre s'ouvre en cas de rupture nette des 60 000, avec un test possible de 58 000-59 000 où les baleines ont massivement acheté.\n\n### Feu de circulation Bitcoin, 7 juillet 2026\n\n```\n🔴 Flux ETF          → 10 jours de sorties (-2,73 Md$) avant un unique rebond jeudi ; YTD -5,4 Md$\n🔴 Fear & Greed      → Entre 15 (extrême peur) et 27 selon les sources ; sentiment franchement négatif\n🔴 Fed               → Warsh a durci le ton, 9 gouverneurs sur 19 voient une hausse d'ici fin d'année\n🟠 Dollar (DXY)      → 101,07 ce matin, stable dans un range, ni euphorie ni faiblesse\n🔴 Technique         → Strong sell sur TradingView, moyennes mobiles et oscillateurs alignés à la baisse\n🔴 Supports          → BTC collé à sa MA 200 semaines (62 500 $), sous les EMA 50 et 200 jours\n🟠 Catalyseur 7j     → Semaine calme, mais minutes de la Fed mercredi et CPI US le 14 juillet en embuscade\n```\n\n**Verdict du jour : 5 rouges et 2 oranges sur 7.** Environnement clairement défavorable au Bitcoin cette semaine. Attention toutefois : quand la peur atteint les niveaux actuels (15/100 sur certaines mesures), c'est parfois le signal contrarian qui précède un rebond, surtout si le support des 62 500 dollars tient.\n\n\n## 4. Or, le beau temps se fait attendre\n\nL'or navigue ce matin autour de **4 200 dollars l'once**, encore en pleine digestion d'une correction spectaculaire. Le métal jaune avait touché un record absolu à 5 600 dollars en janvier, avant de perdre plus de 25 % en six mois. Ces dernières semaines, il se replie comme on refermerait un parapluie mal ouvert, coincé entre deux forces contradictoires. D'un côté, la demande de valeur refuge reste vive, alimentée par les tensions au Moyen-Orient. De l'autre, le dollar joue les gros bras et la Fed hawkish rend l'or moins attractif face aux rendements obligataires.\n\nLe rapport sur l'emploi US de vendredi a un peu rebattu les cartes en faveur du métal jaune : quand les chances d'une hausse de taux en septembre sont passées de 67 % à environ 50 %, l'or a naturellement respiré. Mais le mouvement reste timide.\n\nTechniquement, TradingView renvoie un signal **vente** sur les moyennes mobiles et **neutre** sur les oscillateurs. La zone de correction majeure se situe près de 4 000 dollars, un niveau psychologique que tout le monde surveille de près. Les projections de juillet donnent une fourchette large, entre 3 365 et 4 236 dollars, avec une fin de mois attendue entre 3 542 et 3 887 dollars. Autrement dit, il faut se préparer à la possibilité que l'or perde encore du terrain avant de rebondir.\n\n## 5. Synthèse stratégique\n\nLes trois marchés que vous suivez racontent aujourd'hui une même histoire, celle d'un monde suspendu entre deux hypothèses. Soit la Fed va effectivement remonter ses taux cet été, et le dollar montera, l'or corrigera encore, le Bitcoin restera sous pression et les actions européennes finiront par tousser aussi. Soit le marché du travail américain confirme son ralentissement et l'inflation cède, auquel cas la Fed sera obligée de reculer, le dollar faiblira, et l'or, le Bitcoin et le CAC 40 pourraient tous repartir de l'avant en même temps.\n\nLe CAC 40 est celui qui vit le mieux ce moment. Il profite d'une inflation zone euro qui s'assagit et d'un ton BCE plus doux, ce qui lui permet de flirter avec ses sommets historiques. Le Bitcoin et l'or, en revanche, subissent frontalement la posture hawkish de la Fed. Point d'inflexion à surveiller : le CPI américain du 14 juillet. Si l'inflation ressort en dessous des attentes, le scénario baissier pour l'or et le Bitcoin s'inverse d'un coup. Si elle ressort au-dessus, la Fed aura toutes les raisons de durcir davantage, et il faudra alors se préparer à un été rugueux.\n\n## 6. Calendrier de la semaine\n\nVous êtes à Nouméa, donc il faut ajouter environ 9 heures aux heures de Paris pour retrouver votre heure locale. Un événement à 14h30 à Paris, c'est le lendemain matin 23h30 chez vous, autant dire que la plupart des grands rendez-vous US tombent pendant votre nuit.\n\n**Mardi 7 juillet.** Journée relativement calme, avec quelques indicateurs secondaires en zone euro (production industrielle allemande notamment) qui pourront donner un coup de projecteur ou une petite ombre au CAC 40. Rien qui devrait bouleverser les marchés.\n\n**Mercredi 8 juillet.** C'est **le rendez-vous de la semaine**. La Réserve fédérale américaine publie les minutes de sa réunion de juin à **20h00 heure de Paris** (soit 5h00 du matin jeudi à Nouméa). Les investisseurs vont éplucher le moindre mot pour comprendre pourquoi Warsh et ses collègues ont soudainement durci le ton, et à quel point une hausse en juillet est vraiment sur la table. Impact potentiel sur les trois marchés que vous suivez : **fort**.\n\n**Jeudi 9 juillet.** Les demandes hebdomadaires d'allocations chômage aux États-Unis, à 14h30 heure de Paris, seront regardées avec attention après le mauvais chiffre NFP de vendredi dernier. Impact **moyen**, mais si elles confirment un ralentissement du marché du travail, le scénario \"Fed obligée de reculer\" reprend de la vigueur.\n\n**Vendredi 10 juillet.** Journée sans publication majeure. Attention aux flux techniques et aux prises de bénéfices avant le week-end, surtout sur le Bitcoin qui reste fragile près de son support à 62 500 dollars.\n\n**Semaine suivante en embuscade.** Notez déjà dans un coin de votre tête que le **CPI américain du mardi 14 juillet** sera l'événement qui pourrait faire basculer tout ce que je viens d'écrire, et que la BCE décide le **jeudi 23 juillet**. Puis la Fed du **28-29 juillet** viendra clore le mois avec sa décision de taux, très attendue.\n\n### Le rendez-vous à ne pas manquer cette semaine\n\n> Les minutes de la Fed, mercredi 8 juillet à 20h00 heure de Paris (jeudi 5h00 à Nouméa). C'est ce qui donnera le ton de tout juillet.\n\n---\n\n## Verdict du jour, en détail\n\nCinq feux rouges et deux oranges, aucun vert. Il faut prendre un instant pour mesurer ce que ça veut vraiment dire. Ce n'est pas seulement que le Bitcoin va mal ce matin, c'est que **toutes les grandes forces qui influencent son prix pointent dans la même direction**, celle du bas. Quand un ou deux voyants clignotent, c'est du bruit de marché ordinaire, ça arrive plusieurs fois par mois. Quand cinq voyants s'alignent en rouge en même temps, c'est un climat, une saison. Et cette saison est celle du doute.\n\n### Ce que les cinq rouges racontent ensemble\n\nPrenons les indicateurs un par un pour voir comment ils s'emboîtent. Les **ETF Bitcoin américains** viennent d'enchaîner dix journées de fuite d'investisseurs. Ce n'est pas anodin, parce que ce sont ces mêmes ETF qui, en 2024 et 2025, avaient tiré le Bitcoin vers ses sommets. Quand les gros gestionnaires d'actifs de Wall Street se retirent, c'est la locomotive du marché qui ralentit. En parallèle, le **Fear & Greed Index** plonge dans l'extrême peur, ce qui traduit une inquiétude palpable chez les particuliers. La **Fed** durcit le ton et menace de remonter ses taux, ce qui pénalise mécaniquement les actifs sans rendement comme le Bitcoin et l'or : pourquoi détenir un actif volatil qui ne rapporte rien quand une obligation d'État vous paie 4 % par an sans risque ? L'**analyse technique** confirme le tout avec un signal de vente franc, et le **support majeur** est en train d'être testé. Chacun de ces cinq facteurs, pris isolément, ne serait pas dramatique. Mais ils se renforcent l'un l'autre : les particuliers ont peur parce que la Fed est dure, la Fed dure fait sortir les ETF, les sorties d'ETF cassent les supports, la casse des supports déclenche des ventes techniques, et les ventes techniques accentuent la peur. C'est un cercle qui tourne dans le mauvais sens.\n\n### Le paradoxe du signal contrarian\n\nEt pourtant, malgré ce tableau très noir, il y a un principe que les vieux investisseurs répètent depuis un siècle : **c'est quand personne ne veut acheter qu'il faut acheter**. Ce n'est pas une formule mystique, c'est une observation. Lorsque le Fear & Greed Index tombe à 15 sur 100, cela veut dire que presque tout le monde a déjà vendu, ou tout du moins que ceux qui voulaient vendre l'ont déjà fait. À ce moment-là, mathématiquement, il ne reste plus beaucoup de vendeurs en réserve. Et quand il ne reste plus de vendeurs, il suffit d'un seul acheteur pour que le prix reparte à la hausse. C'est ce qu'on appelle un signal contrarian, c'est-à-dire un signal qui suggère de faire l'inverse de ce que le troupeau fait.\n\nHistoriquement, sur le Bitcoin, les cinq derniers passages du Fear & Greed sous les 20 ont tous été suivis d'un rebond dans les six semaines qui ont suivi. Ce n'est pas une garantie, c'est une régularité statistique. Et cette régularité est renforcée aujourd'hui par un fait très concret : pendant que les ETF Wall Street font sortir des milliards, les baleines, ces adresses qui détiennent plus de 100 bitcoins, ont accumulé 270 000 BTC en deux semaines autour de 59 000 dollars. En clair, la vieille garde crypto profite de la panique des institutionnels pour ramasser tranquillement. Ce type de divergence entre argent institutionnel qui fuit et argent expérimenté qui accumule est très souvent le prélude à un retournement, même s'il peut prendre des semaines à se matérialiser.\n\n### Le nerf de la guerre : le support à 62 500 dollars\n\nIl y a un niveau qui va décider de tout dans les jours qui viennent, et c'est ce fameux **62 500 dollars**, la moyenne mobile 200 semaines. Ce chiffre a l'air arbitraire, mais il ne l'est pas. La moyenne mobile 200 semaines représente le prix moyen du Bitcoin sur environ quatre ans, autrement dit le prix qu'ont payé en moyenne les gens qui ont acheté du Bitcoin depuis 2022. C'est un peu la ligne de flottaison psychologique du marché. Tant que le prix reste au-dessus, la majorité des détenteurs sont en profit et n'ont pas de raison particulière de vendre en panique. En dessous, ils passent en perte, et les ventes de désespoir peuvent s'enchaîner en cascade.\n\nCe niveau a une autre particularité : lors des trois derniers cycles baissiers du Bitcoin (2015, 2018 et 2022), il a servi de plancher final avant les grands rebonds. Autrement dit, si le Bitcoin tient 62 500 dollars cette semaine, le scénario contrarian devient très crédible et un rebond vers 65 000 ou 67 000 est envisageable dans les prochaines semaines. Si en revanche il casse ce niveau et clôture plusieurs jours en dessous, la mécanique de la peur s'accélère et les cibles suivantes deviennent 60 000, puis 58 000, et enfin le grand plancher psychologique des 55 000 dollars. La différence entre ces deux scénarios se joue sur quelques centaines de dollars, ce qui explique pourquoi les analystes retiennent leur souffle en ce début de semaine.\n\n### Ce que ça veut dire concrètement pour vous\n\nCette veille n'est pas un conseil d'investissement, mais quelques repères peuvent vous aider à lire les prochains jours sans stress inutile. Premièrement, dans un environnement à 5 rouges, la règle d'or est de ne pas céder à l'urgence d'agir. Ni l'urgence d'acheter (« c'est bas, ça va rebondir »), ni l'urgence de vendre (« ça va tomber, sauvons ce qui reste »). Les décisions prises dans la peur ou dans l'euphorie sont statistiquement les pires. Deuxièmement, l'événement qui va arbitrer entre les deux scénarios est identifié et daté : ce sont les minutes de la Fed mercredi 8 juillet à 20h00 heure de Paris. Si le ton perçu est plus doux qu'attendu, un rebond peut s'enclencher dans la foulée. Si le ton confirme la ligne dure de Warsh, la pression baissière sur le Bitcoin va se renforcer. Troisièmement, le vrai juge de paix technique reste ce support à 62 500 dollars. Tant qu'il tient à la clôture quotidienne, le scénario contrarian garde toutes ses chances. Une clôture nette en dessous change tout.\n\nEn résumé : le climat est franchement défavorable, mais pas encore catastrophique. Le marché est à un point d'inflexion, pas dans une chute libre. C'est le genre de semaine où l'observation vaut mieux que l'action, et où mercredi soir donnera probablement le ton de l'été.\n\n---\n\n## Sources\n\n- CAC 40 Boursorama : https://www.boursorama.com/bourse/indices/cours/1rPCAC/\n- CAC 40 clôture 5 juillet, BFM Bourse : https://www.tradingsat.com/cac-40-FR0003500008/actualites/cac-40-alors-que-wall-street-a-fait-relache-ce-vendredi-le-cac-40-cloture-au-dessus-des-8500-points-1166146.html\n- Bitcoin BTC Coinbase : https://www.coinbase.com/price/bitcoin\n- Bitcoin ETF Flows CoinGlass : https://www.coinglass.com/etf/bitcoin\n- Bitcoin Whales 270K BTC juillet 2026, SpotedCrypto : https://www.spotedcrypto.com/bitcoin-whales-270k-btc-etf-outflows-july-2026/\n- Bitcoin exchange deposits 49k BTC, CryptoBriefing : https://cryptobriefing.com/bitcoin-exchange-deposits-spike-volatility/\n- Fear & Greed Index Alternative.me : https://alternative.me/crypto/fear-and-greed-index/\n- Bitcoin analysis Cryptonomist juillet 2026 : https://en.cryptonomist.ch/2026/07/06/bitcoin-price-today-analysis-mixed-signals/\n- Bitcoin technicals TradingView : https://www.tradingview.com/symbols/BTCUSD/technicals/\n- Gold XAUUSD Investing.com : https://www.investing.com/currencies/xau-usd\n- Gold Intellectia juillet 2026 : https://intellectia.ai/blog/gold-price-forecast-july-2026-xauusd-analysis\n- Gold Vantage Markets juillet 2026 : https://www.vantagemarkets.com/market-analysis/xauusd-gold-price-analysis-july-1-2026/\n- Fed FOMC juin 2026 CNBC : https://www.cnbc.com/2026/06/17/fed-interest-rate-decision-june-2026.html\n- DXY TradingView : https://www.tradingview.com/symbols/TVC-DXY/\n- DXY Long Forecast : https://longforecast.com/dollar-index\n- Calendrier économique Investing.com : https://www.investing.com/economic-calendar\n- FOMC calendars Federal Reserve : https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm\n- Semaine 6-10 juillet Kiplinger : https://www.kiplinger.com/investing/economy/this-weeks-economic-calendar"},{"date":"2026-07-03","titre":"CAC 40 · Crypto · Or","md":"## Le fil conducteur du jour\n\nCe matin, les marchés vivent la gueule de bois d'une statistique américaine qui a changé le cadre en une matinée. Hier, le rapport sur l'emploi non agricole des États-Unis, ce fameux NFP que tout le monde attend chaque premier vendredi du mois, est tombé à 57 000 créations de postes alors que les économistes en espéraient 110 000. Presque moitié moins. Le message est simple : le marché du travail américain se refroidit plus vite que prévu. Le dollar a reculé, les taux longs se sont détendus (le taux à dix ans est passé sous 4,50%), et l'idée qu'une baisse de taux de la banque centrale américaine reste possible avant la fin d'année a repris des couleurs, même si Jerome Powell continue de répéter, comme il l'a fait à Sintra, que l'inflation reste \"trop élevée\".\n\nDeuxième force à l'œuvre : l'Europe termine son deuxième trimestre en position de force. Le CAC 40 vient de signer +7,51% sur trois mois, sa meilleure séquence trimestrielle depuis début 2024. Mais Wall Street a fini par battre l'Europe sur la longueur et ce contraste, avec des indices américains toujours dopés par le thème de l'intelligence artificielle, reste le décor de fond.\n\nTroisième trame : les actifs alternatifs digèrent. Le bitcoin sort du pire mois de son année, l'or souffle après son record historique de janvier. Ni panique, ni euphorie. On respire.\n\n## CAC 40 — Un trimestre en beauté, un juillet plus prudent\n\nLa Bourse de Paris entame juillet en position confortable mais avec les jambes un peu lourdes. L'indice a clôturé son deuxième trimestre autour de 8 404 points, en hausse de 2,70% sur le seul mois de juin et de 7,51% sur le trimestre. Sur l'année, il n'affiche que +3,12%, ce qui rappelle que les premiers mois avaient été plus difficiles et que le rebond du printemps a fait presque tout le travail.\n\nLe moteur des dernières semaines vient surtout des banques, qui portent l'indice à bout de bras. Depuis janvier, BNP Paribas progresse d'environ 25%, Société Générale de plus de 10%, dans une Europe où la BCE, par la voix de Christine Lagarde, a réaffirmé cette semaine qu'elle pouvait à nouveau piloter l'économie principalement par les taux, une manière élégante de dire que la politique monétaire est redevenue lisible. Air Liquide inscrit un nouveau record après avoir annoncé un investissement de 170 millions de dollars aux États-Unis pour fournir des gaz ultra-purs au fabricant de puces SK Hynix, autrement dit pour vendre les pelles à ceux qui creusent la mine de l'IA. Airbus, dans la foulée d'une commande de 40 gros-porteurs par SAS, atteint un plus haut de quatre mois. Le mauvais élève reste Kering, qui a chuté de près de 7% après avoir laissé entendre que le redressement de Gucci prendra plus de temps que prévu.\n\nTechniquement, l'indice évolue dans une zone chargée d'histoire. Les analyses sur TradingView placent la première résistance sérieuse autour de 8 400 points, précisément là où l'indice campe depuis quelques jours. Au-dessus, le sommet historique proche de 8 600 points ferait office de dernier mur avant un scénario plus ambitieux. Les extensions de Fibonacci, cet outil que les techniciens utilisent pour repérer où le marché pourrait s'arrêter en cas de rupture, dessinent des cibles successives à 8 665, puis 8 795, et enfin 9 187 points si le contexte macro suit. En dessous, le premier filet de sécurité se situe autour de 8 220 points, avec les 8 000 points comme véritable ligne de défense.\n\nNiveaux à surveiller :\n- Résistances : 8 400 (immédiate), 8 600 (record), puis 8 665 / 8 795\n- Supports : 8 220 (première zone), 8 000 (majeure)\n- Signal technique global : moyennes mobiles fortement acheteuses, oscillateurs neutres, ce qui traduit une tendance de fond haussière mais un marché essoufflé à court terme\n\n## Crypto — Le bitcoin sort de convalescence\n\nLe bitcoin s'échange ce matin autour de 61 000 dollars, presque à l'endroit exact où il a terminé le mois de juin, et cette apparente stabilité cache un mois catastrophique. Juin s'est soldé par une baisse d'environ 18,5%, le plus mauvais mois de l'année. Nous sommes très loin du sommet historique inscrit le 6 octobre 2025 à 126 272 dollars, un pic qui semble aujourd'hui appartenir à une autre saison.\n\nCe qui s'est passé en juin explique beaucoup. Les ETF bitcoin au comptant, ces fonds cotés qui permettent aux investisseurs traditionnels d'acheter du bitcoin en Bourse comme une action, ont subi 4,5 milliards de dollars de retraits nets, la pire performance mensuelle depuis leur lancement en janvier 2024. Le fonds IBIT de BlackRock a encaissé à lui seul 3,55 milliards de sorties. La banque Citi a d'ailleurs abaissé cette semaine ses objectifs à douze mois pour le bitcoin et l'ether, prenant acte du fait que les grands institutionnels retirent leur argent. Le décor n'est pas totalement noir cependant : l'entrée en vigueur du cadre réglementaire européen MiCA le 1er juillet est censée réduire le brouillard réglementaire pour les acteurs licenciés, et l'argent qui sort du bitcoin ne quitte pas toujours l'écosystème, une partie rejoint Ethereum, Solana ou Hyperliquid.\n\nLe thermomètre de sentiment est à l'image de la scène : l'indice Fear & Greed, cette jauge qui mesure la peur et la cupidité du marché sur une échelle de 0 à 100, oscille entre 36 (peur) et 44 (neutre). Ni capitulation, ni retour de la confiance. Sur le graphique, TradingView renvoie un signal de vente en journalier comme en hebdomadaire, avec des moyennes mobiles fortement baissières. Le RSI à 38 traduit un marché déprimé sans être encore en zone de survente franche, autrement dit il reste techniquement de la place pour baisser, mais aussi une amorce possible de rebond.\n\nUn point de saisonnalité mérite qu'on s'y arrête : historiquement, juillet est plutôt un bon mois pour le bitcoin, avec un rendement moyen proche de +7,6%. Le calendrier joue donc pour, la technique joue contre.\n\nNiveaux à surveiller :\n- Supports : 58 000 (zone charnière du trimestre), 57 759 (court terme), puis vide sous 55 000\n- Résistances : 66 000 (moyennes mobiles), 77 000 (zone de rejet précédente), 81 999 (majeure)\n- Catalyseurs : suite des flux ETF, ton de la Fed en juillet, mise en application concrète de MiCA\n\n## Or — Le repli d'un roi\n\nL'or campe ce matin autour de 4 066 dollars l'once, dans une zone d'attente. Le contraste avec le début d'année est frappant : le métal jaune a inscrit son record historique le 29 janvier 2026 à 5 602 dollars, et depuis, il redescend sagement de plusieurs étages. On peut voir cela comme un essoufflement après une course magnifique, ou comme une prise de bénéfices que le repli du dollar hier n'a pas suffi à contrarier.\n\nLa dynamique récente est celle d'une consolidation. Après avoir joué son rôle de refuge dans les moments les plus tendus des premiers mois de l'année, l'or profite moins du refroidissement du marché du travail américain qu'on aurait pu le croire. Une explication tient au fait que si les taux baissent, ils baissent parce que l'économie ralentit, mais aussi parce que l'inflation se calme, ce qui retire à l'or une partie de son attrait. L'autre explication, plus prosaïque, tient à la rotation des capitaux : les investisseurs qui ont pris leurs bénéfices sur l'or en début d'année sont partis chercher du rendement ailleurs.\n\nTechniquement, le mois de juillet est prévu dans un couloir compris entre 3 951 et 4 114 dollars. Un couloir suffisamment étroit pour qu'un mouvement d'un côté ou de l'autre soit rapidement lisible. Un support important se situe à 3 820 dollars, avec des niveaux intermédiaires à 3 980 et 3 960 qui ont déjà servi de plancher ces dernières séances. Côté résistances, la moyenne mobile à 100 périodes autour de 4 150 dollars sera le premier vrai obstacle, et il faudrait aller taper la moyenne mobile à 200 périodes autour de 4 316 dollars pour reparler d'un vrai regain de forme.\n\nNiveaux à surveiller :\n- Supports : 4 034 (moyenne mobile 20), 3 980 à 3 960, puis 3 820 (majeur)\n- Résistances : 4 114 (haut de range mensuel), 4 150 (moyenne mobile 100), 4 316 (moyenne mobile 200)\n- Signal : marché en consolidation, biais neutre, attente d'un catalyseur clair\n\n## Synthèse stratégique\n\nTrois marchés, une même toile de fond. Le NFP décevant de vendredi dernier a joué comme un révélateur : les investisseurs recommencent à croire que la Fed pourrait desserrer sa politique, mais pas au point de tout emporter dans un même mouvement de foule. Le dollar s'affaisse légèrement, les taux longs se détendent, et pourtant l'or ne rebondit pas franchement et le bitcoin ne repart pas fort. Cela dit deux choses. D'abord, le récit dominant n'est plus la fuite vers les valeurs refuges, c'est la sélectivité. Ensuite, les actifs qui tirent leur épingle du jeu sont ceux qui ont un moteur propre, comme les banques européennes portées par le retour à une politique monétaire lisible, ou les valeurs françaises adossées au thème de l'intelligence artificielle comme Air Liquide.\n\nLe CAC 40, techniquement le plus sain des trois, arrive à un point d'inflexion classique : ou il casse par le haut la zone des 8 400 à 8 600 points et ouvre un nouveau chapitre vers 9 000, ou il consolide dans un range et rend un peu de son trimestre spectaculaire. Le bitcoin est dans une phase inverse : c'est la peur qui domine, mais la saisonnalité et le calendrier réglementaire européen pourraient offrir un rebond dans les semaines qui viennent, à condition que les flux ETF se stabilisent. L'or, lui, est le grand contemplatif du trio, il attend un vrai signal, qui viendra probablement d'un choc géopolitique, d'un changement de ton clair de la Fed ou d'une nouvelle poussée d'inflation.\n\nLes points d'inflexion à surveiller cette semaine :\n- Prochaines minutes de la Fed et discours des membres du comité, qui diront si le NFP a réellement changé leur ton\n- Publication des flux ETF bitcoin quotidiens, dont un simple retour à l'équilibre serait déjà une bonne nouvelle\n- Comportement du dollar face à l'euro, thermomètre unique qui influence directement l'or et indirectement le CAC 40 via les valeurs exportatrices\n- Zone 8 400 sur le CAC 40, zone 58 000 sur le bitcoin, zone 4 000 sur l'or, trois lignes qui, si elles cèdent, feront basculer les scénarios\n\n---\n\n## Sources\n\n- [Bourse Paris — Trimestre CAC 40 (Boursorama / Zonebourse)](https://www.boursorama.com/bourse/actualites/trimestre-prolifique-pour-le-cac-40-bc547de5e067f1a9974d90d1b3337b08)\n- [Valeurs à suivre CAC 40 juillet 2026 (Boursorama)](https://www.boursorama.com/bourse/actualites/les-valeurs-a-suivre-a-paris-et-en-europe-actualise-fb03b2e05b2a06d362afa43533ef68e2)\n- [Analyse technique CAC 40 (TradingView)](https://fr.tradingview.com/symbols/TVC-CAC40/technicals/)\n- [Bitcoin niveaux techniques juillet 2026 (Phemex)](https://phemex.com/fr/blogs/bitcoin-reclaim-65000-after-worst-month-2026)\n- [ETF Bitcoin — sorties record juin 2026 (ActuCrypto)](https://actucrypto.info/etf/etf-bitcoin-sorties-record-4-5-milliards-juin/)\n- [Fear & Greed Index crypto (Alternative.me)](https://alternative.me/crypto/fear-and-greed-index/)\n- [Gold XAU/USD analyse (LiteFinance)](https://www.litefinance.org/blog/analysts-opinions/gold-price-prediction-forecast/daily-and-weekly/)\n- [NFP US et impact marchés (Tradingsat)](https://www.tradingsat.com/actualites/marches-financiers/des-mauvais-chiffres-sur-l-emploi-americain-font-chuter-le-dollar-tandis-que-le-cac-40-accelere-et-prend-13-1166060.html)"}];
+
+  /* ---------- mini rendu Markdown ---------- */
+  function inline(s) {
+    return s
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+
+  function mdToHtml(md) {
+    const lines = md.replace(/\r\n/g, "\n").split("\n");
+    let out = "", list = false, quote = [], code = false, codeBuf = [];
+    const closeList = () => { if (list) { out += "</ul>"; list = false; } };
+    const flushQuote = () => {
+      if (quote.length) {
+        out += "<blockquote>" + quote.map(q => "<p>" + inline(q) + "</p>").join("") + "</blockquote>";
+        quote = [];
+      }
+    };
+    const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    for (const raw of lines) {
+      const line = raw.replace(/\s+$/, "");
+      if (/^```/.test(line)) {
+        if (!code) { closeList(); flushQuote(); code = true; codeBuf = []; }
+        else { out += "<pre>" + codeBuf.map(esc).join("\n") + "</pre>"; code = false; }
+        continue;
+      }
+      if (code) { codeBuf.push(raw); continue; }
+      if (/^>\s?/.test(line)) { closeList(); quote.push(line.replace(/^>\s?/, "")); continue; }
+      flushQuote();
+      if (line.trim() === "") { closeList(); continue; }
+      if (/^###\s+/.test(line)) { closeList(); out += "<h3>" + inline(line.replace(/^###\s+/, "")) + "</h3>"; continue; }
+      if (/^##\s+/.test(line))  { closeList(); out += "<h2>" + inline(line.replace(/^##\s+/, "")) + "</h2>"; continue; }
+      if (/^#\s+/.test(line))   { closeList(); out += "<h1>" + inline(line.replace(/^#\s+/, "")) + "</h1>"; continue; }
+      if (/^---+\s*$/.test(line)) { closeList(); out += "<hr>"; continue; }
+      if (/^[-*]\s+/.test(line)) {
+        if (!list) { out += "<ul>"; list = true; }
+        out += "<li>" + inline(line.replace(/^[-*]\s+/, "")) + "</li>";
+        continue;
+      }
+      closeList();
+      out += "<p>" + inline(line) + "</p>";
+    }
+    closeList(); flushQuote();
+    if (code && codeBuf.length) out += "<pre>" + codeBuf.map(esc).join("\n") + "</pre>";
+    return out;
+  }
+
+  /* ---------- dates FR ---------- */
+  const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  const JOURS = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+  function parse(d) { const [y,m,j] = d.split("-").map(Number); return new Date(y, m-1, j); }
+  function longDate(d) { const dt = parse(d); return JOURS[dt.getDay()] + " " + dt.getDate() + " " + MOIS[dt.getMonth()] + " " + dt.getFullYear(); }
+  function dayNum(d) { return parse(d).getDate(); }
+  function monthKey(d) { const dt = parse(d); return MOIS[dt.getMonth()] + " " + dt.getFullYear(); }
+
+  /* ---------- état + rendu ---------- */
+  const data = [...REPORTS].sort((a,b) => b.date.localeCompare(a.date));
+  let current = 0;
+
+  function renderList() {
+    const rail = document.getElementById("railList");
+    const chips = document.getElementById("chips");
+    rail.innerHTML = ""; chips.innerHTML = "";
+    let lastMonth = "";
+    data.forEach((r, i) => {
+      const mk = monthKey(r.date);
+      if (mk !== lastMonth) {
+        const h = document.createElement("div");
+        h.className = "month-label";
+        h.textContent = mk;
+        rail.appendChild(h);
+        lastMonth = mk;
+      }
+      const b = document.createElement("button");
+      b.className = "entry" + (i === current ? " active" : "");
+      b.innerHTML = '<div class="d-day">' + longDate(r.date) + '</div><div class="d-meta">' + r.titre + '</div>';
+      b.onclick = () => select(i);
+      rail.appendChild(b);
+
+      const c = document.createElement("button");
+      c.className = "chip" + (i === current ? " active" : "");
+      c.textContent = dayNum(r.date) + " " + monthKey(r.date).split(" ")[0];
+      c.onclick = () => select(i);
+      chips.appendChild(c);
+    });
+  }
+
+  function renderPane() {
+    const pane = document.getElementById("pane");
+    if (!data.length) { pane.innerHTML = '<div class="empty">Aucun compte rendu pour le moment.</div>'; return; }
+    const r = data[current];
+    pane.innerHTML =
+      '<div class="doc-kicker">Compte rendu des marchés</div>' +
+      '<h2 class="doc-date">' + longDate(r.date) + '</h2>' +
+      '<div class="doc-note">' + (r.titre || "") + '</div>' +
+      '<div class="md">' + mdToHtml(r.md) + '</div>';
+    window.scrollTo(0, 0);
+  }
+
+  function select(i) { current = i; renderList(); renderPane(); }
+
+  renderList();
+  renderPane();
+</script>
