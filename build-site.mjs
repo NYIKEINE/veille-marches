@@ -59,6 +59,7 @@ function build() {
         : b.date.localeCompare(a.date))
     .map(r => ({
       date: r.date,
+      type: r.type,
       titre: TYPES[r.type].subtitle,
       md: prepare(readFileSync(join(REPORTS_DIR, r.filename), "utf8")),
     }));
