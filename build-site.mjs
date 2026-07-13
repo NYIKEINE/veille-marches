@@ -7,6 +7,7 @@
 //   AAAA-MM-JJ-crypto.md   → revue de presse crypto hebdomadaire
 //   AAAA-MM-JJ-flash.md    → flash crypto urgent
 //   AAAA-MM-JJ-dossier.md  → dossier thématique (le titre = le H1 du fichier)
+//   AAAA-MM-JJ-dossier-<slug>.md → plusieurs dossiers le même jour (slug libre)
 //
 // Usage : node build-site.mjs
 //
@@ -51,7 +52,7 @@ function prepare(raw) {
 }
 
 function classify(filename) {
-  const m = filename.match(/^(\d{4}-\d{2}-\d{2})(?:-(crypto|flash|dossier))?\.md$/);
+  const m = filename.match(/^(\d{4}-\d{2}-\d{2})(?:-(crypto|flash|dossier)(?:-[a-z0-9-]+)?)?\.md$/);
   if (!m) return null;
   const type = m[2] || "daily";
   return { date: m[1], type, filename };
