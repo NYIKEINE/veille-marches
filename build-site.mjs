@@ -2,10 +2,11 @@
 // Régénère site.html à partir de tous les comptes rendus Markdown du dossier
 // comptes-rendus/.
 //
-// Trois types de contenu, distingués par le nom du fichier :
+// Quatre types de contenu, distingués par le nom du fichier :
 //   AAAA-MM-JJ.md          → veille quotidienne (CAC 40 · Crypto · Or)
 //   AAAA-MM-JJ-crypto.md   → revue de presse crypto hebdomadaire
 //   AAAA-MM-JJ-flash.md    → flash crypto urgent
+//   AAAA-MM-JJ-dossier.md  → dossier thématique (le titre = le H1 du fichier)
 //
 // Usage : node build-site.mjs
 //
@@ -23,10 +24,18 @@ const OUTPUT = join(HERE, "index.html");
 // Sous-titre affiché sur chaque carte, et priorité d'affichage à date égale
 // (rang le plus élevé en premier : un flash passe devant la revue, puis la veille).
 const TYPES = {
-  flash:  { subtitle: "⚡ Flash crypto urgent",           rank: 2 },
-  crypto: { subtitle: "Revue de presse crypto de la semaine", rank: 1 },
-  daily:  { subtitle: "CAC 40 · Crypto · Or",             rank: 0 },
+  dossier: { subtitle: "Dossier thématique",              rank: 3 },
+  flash:   { subtitle: "⚡ Flash crypto urgent",           rank: 2 },
+  crypto:  { subtitle: "Revue de presse crypto de la semaine", rank: 1 },
+  daily:   { subtitle: "CAC 40 · Crypto · Or",            rank: 0 },
 };
+
+// Pour les dossiers, le titre affiché est le premier titre H1 du fichier.
+function firstH1(raw) {
+  const line = raw.replace(/\r\n/g, "\n").split("\n")
+    .map(l => l.trim()).find(l => /^#\s+/.test(l));
+  return line ? line.replace(/^#\s+/, "") : null;
+}
 
 function prepare(raw) {
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
@@ -42,7 +51,7 @@ function prepare(raw) {
 }
 
 function classify(filename) {
-  const m = filename.match(/^(\d{4}-\d{2}-\d{2})(?:-(crypto|flash))?\.md$/);
+  const m = filename.match(/^(\d{4}-\d{2}-\d{2})(?:-(crypto|flash|dossier))?\.md$/);
   if (!m) return null;
   const type = m[2] || "daily";
   return { date: m[1], type, filename };
@@ -57,12 +66,14 @@ function build() {
       a.date === b.date
         ? TYPES[b.type].rank - TYPES[a.type].rank
         : b.date.localeCompare(a.date))
-    .map(r => ({
-      date: r.date,
-      type: r.type,
-      titre: TYPES[r.type].subtitle,
-      md: prepare(readFileSync(join(REPORTS_DIR, r.filename), "utf8")),
-    }));
+    .map(r => {
+      const raw = readFileSync(join(REPORTS_DIR, r.filename), "utf8");
+      // Le dossier affiche son propre titre (le H1) ; les autres, le libellé du type.
+      const titre = r.type === "dossier"
+        ? (firstH1(raw) || TYPES.dossier.subtitle)
+        : TYPES[r.type].subtitle;
+      return { date: r.date, type: r.type, titre, md: prepare(raw) };
+    });
 
   const template = readFileSync(TEMPLATE, "utf8");
   const html = template.replace("__REPORTS__", JSON.stringify(reports));

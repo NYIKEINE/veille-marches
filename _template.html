@@ -128,8 +128,9 @@
     transition: background .25s ease;
   }
   /* Fond de page distinct selon le type de contenu */
-  .pane[data-type="crypto"] { background: #EEF3F9; }   /* revue de presse hebdo : bleu très clair */
-  .pane[data-type="flash"]  { background: #FCF3E7; } /* flash urgent : ambre doux */
+  .pane[data-type="crypto"]  { background: #EEF3F9; }  /* revue de presse hebdo : bleu très clair */
+  .pane[data-type="flash"]   { background: #FCF3E7; }  /* flash urgent : ambre doux */
+  .pane[data-type="dossier"] { background: #F1EFF7; }  /* dossier thématique : lavande très clair */
   .pane-inner {
     max-width: 720px;
     margin: 0 auto;
@@ -402,6 +403,7 @@
     crypto: "Revue de presse crypto",
     flash: "Flash crypto urgent",
     daily: "Compte rendu des marchés",
+    dossier: "Dossier thématique",
   };
 
   function renderPane() {
@@ -410,11 +412,20 @@
     if (!data.length) { pane.innerHTML = '<div class="empty">Aucun compte rendu pour le moment.</div>'; return; }
     const r = data[current];
     if (main) main.dataset.type = r.type || "daily";
-    pane.innerHTML =
-      '<div class="doc-kicker">' + (KICKERS[r.type] || KICKERS.daily) + '</div>' +
-      '<h2 class="doc-date">' + longDate(r.date) + '</h2>' +
-      '<div class="doc-note">' + (r.titre || "") + '</div>' +
-      '<div class="md">' + mdToHtml(r.md) + '</div>';
+    if (r.type === "dossier") {
+      // Le dossier met son titre en avant ; la date passe dans le kicker.
+      pane.innerHTML =
+        '<div class="doc-kicker">' + KICKERS.dossier + ' · ' + longDate(r.date) + '</div>' +
+        '<h2 class="doc-date">' + (r.titre || "") + '</h2>' +
+        '<div class="doc-note">Décryptage</div>' +
+        '<div class="md">' + mdToHtml(r.md) + '</div>';
+    } else {
+      pane.innerHTML =
+        '<div class="doc-kicker">' + (KICKERS[r.type] || KICKERS.daily) + '</div>' +
+        '<h2 class="doc-date">' + longDate(r.date) + '</h2>' +
+        '<div class="doc-note">' + (r.titre || "") + '</div>' +
+        '<div class="md">' + mdToHtml(r.md) + '</div>';
+    }
     window.scrollTo(0, 0);
   }
 
