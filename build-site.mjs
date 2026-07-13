@@ -1,6 +1,11 @@
 // build-site.mjs
 // Régénère site.html à partir de tous les comptes rendus Markdown du dossier
-// comptes-rendus/ (un fichier par jour, nommé AAAA-MM-JJ.md).
+// comptes-rendus/.
+//
+// Trois types de contenu, distingués par le nom du fichier :
+//   AAAA-MM-JJ.md          → veille quotidienne (CAC 40 · Crypto · Or)
+//   AAAA-MM-JJ-crypto.md   → revue de presse crypto hebdomadaire
+//   AAAA-MM-JJ-flash.md    → flash crypto urgent
 //
 // Usage : node build-site.mjs
 //
@@ -15,7 +20,13 @@ const REPORTS_DIR = join(HERE, "comptes-rendus");
 const TEMPLATE = join(HERE, "_template.html");
 const OUTPUT = join(HERE, "index.html");
 
-const SOUS_TITRE = "CAC 40 · Crypto · Or";
+// Sous-titre affiché sur chaque carte, et priorité d'affichage à date égale
+// (rang le plus élevé en premier : un flash passe devant la revue, puis la veille).
+const TYPES = {
+  flash:  { subtitle: "⚡ Flash crypto urgent",           rank: 2 },
+  crypto: { subtitle: "Revue de presse crypto de la semaine", rank: 1 },
+  daily:  { subtitle: "CAC 40 · Crypto · Or",             rank: 0 },
+};
 
 function prepare(raw) {
   const lines = raw.replace(/\r\n/g, "\n").split("\n");
@@ -30,17 +41,27 @@ function prepare(raw) {
   return cleaned.join("\n").trim();
 }
 
-function build() {
-  const files = readdirSync(REPORTS_DIR)
-    .filter(f => /^\d{4}-\d{2}-\d{2}\.md$/.test(f))
-    .sort()
-    .reverse(); // plus récent d'abord
+function classify(filename) {
+  const m = filename.match(/^(\d{4}-\d{2}-\d{2})(?:-(crypto|flash))?\.md$/);
+  if (!m) return null;
+  const type = m[2] || "daily";
+  return { date: m[1], type, filename };
+}
 
-  const reports = files.map(f => ({
-    date: f.replace(/\.md$/, ""),
-    titre: SOUS_TITRE,
-    md: prepare(readFileSync(join(REPORTS_DIR, f), "utf8")),
-  }));
+function build() {
+  const reports = readdirSync(REPORTS_DIR)
+    .map(classify)
+    .filter(Boolean)
+    // Plus récent d'abord ; à date égale, le rang le plus élevé passe devant.
+    .sort((a, b) =>
+      a.date === b.date
+        ? TYPES[b.type].rank - TYPES[a.type].rank
+        : b.date.localeCompare(a.date))
+    .map(r => ({
+      date: r.date,
+      titre: TYPES[r.type].subtitle,
+      md: prepare(readFileSync(join(REPORTS_DIR, r.filename), "utf8")),
+    }));
 
   const template = readFileSync(TEMPLATE, "utf8");
   const html = template.replace("__REPORTS__", JSON.stringify(reports));
