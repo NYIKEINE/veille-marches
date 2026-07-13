@@ -44,11 +44,11 @@ Voici la partie que les titres optimistes oublient souvent. Malgré son vote à 
 
 La raison : au Sénat, il faut réunir 60 voix pour faire passer un texte, ce qui oblige les républicains à convaincre plusieurs démocrates. Et trois désaccords bloquent ce ralliement.
 
-- **Une clause d'éthique** sur les cryptos détenues par les responsables publics. Certains élus refusent de soutenir le texte tant qu'une règle encadrant ces conflits d'intérêts n'y figure pas.
-- **La protection de la finance décentralisée** (un point technique surnommé Section 604), qui n'est toujours pas réglé.
-- **La rémunération des stablecoins**, c'est-à-dire la question de savoir si les plateformes ont le droit de verser un intérêt sur ces jetons, ce qu'une autre loi (le GENIUS Act) tend à interdire.
+- **Une clause d'éthique.** C'est le point le plus explosif. Des sénateurs démocrates exigent une disposition qui interdirait aux hauts responsables publics, président compris, de conserver des intérêts d'affaires dans le secteur crypto. Tant que cette règle anti conflit d'intérêts n'est pas ajoutée, ils refusent d'apporter leurs voix.
+- **La protection de la finance décentralisée (Section 604).** Cette section reprend un autre texte, le Blockchain Regulatory Certainty Act, qui mettrait les développeurs de logiciels non dépositaires (ceux qui ne détiennent jamais les fonds des utilisateurs) à l'abri des obligations imposées aux transmetteurs d'argent et de la lourde réglementation anti blanchiment. Le périmètre exact de cette protection fait débat.
+- **La rémunération des stablecoins.** La question paraît technique mais pèse des milliards. Il s'agit de savoir si les plateformes ont le droit de verser une forme d'intérêt sur ces jetons. Coinbase, par exemple, tire environ 1,35 milliard de dollars par an des récompenses versées sur l'USDC. Les banques traditionnelles y voient une faille qui contournerait l'interdiction, posée par une autre loi (le GENIUS Act), de rémunérer directement ces jetons.
 
-Tant que ces trois points ne sont pas tranchés, la loi reste suspendue. C'est le rappel utile que rien n'est joué : un texte peut être largement soutenu et rester bloqué des mois pour des désaccords précis.
+Tant que ces trois points ne sont pas tranchés, la loi reste suspendue. C'est le rappel utile que rien n'est joué : un texte peut être largement soutenu et rester bloqué des mois pour des désaccords précis. Le jour d'un déblocage, la vraie question sera : lequel de ces trois noeuds a été dénoué, et à quel prix ?
 
 ## Le calendrier à surveiller
 
