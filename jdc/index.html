@@ -105,20 +105,14 @@
     <h2>Analyse graphique de la PGA 2027</h2>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin:8px 0" id="anaKpis"></div>
     <div style="margin:6px 0"><b>Période PPA :</b> <select id="anaPeriode" onchange="anaPeriode=this.value;renderAnalyse()" style="width:auto;padding:6px"></select></div>
-    <h3>Convoqués vs Demande par site</h3>
-    <p class="note">En bleu ce qu'on convoque, en gris le nombre de jeunes attendus. Le bleu doit dépasser le gris.</p>
-    <div id="chart1"></div>
-    <h3>Reste places par site (marge)</h3>
-    <p class="note"><span style="color:#2e7d32">Vert</span> = marge disponible ; <span style="color:#c0392b">rouge</span> = sur-réservation.</p>
-    <div id="chart2"></div>
+    <h3>Vue par site</h3>
+    <p class="note">Une carte par site. La barre = taux de <b>remplissage</b> (demande / convoqués). Pastille <b>Reste places</b> : <span style="color:#2e7d32">vert</span> marge, <span style="color:#e67e22">orange</span> serré, <span style="color:#c0392b">rouge</span> sur-réservation. Pastille <b>Taux</b> : <span style="color:#2e7d32">&lt;28%</span> / <span style="color:#e67e22">28-30%</span> / <span style="color:#c0392b">&ge;30%</span>.</p>
+    <div id="cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin:8px 0"></div>
     <h3>Répartition de la demande par type de jeune</h3>
     <div class="legend"><span><i style="background:#0072B2"></i>Affectables</span><span><i style="background:#D55E00"></i>PEC estimée</span><span><i style="background:#009E73"></i>Régularisés</span><span><i style="background:#CC79A7"></i>En attente</span></div>
     <div id="chart3"></div>
     <h3>Convoqués par région</h3>
     <div id="chart4"></div>
-    <h3>Taux d'absentéisme par site</h3>
-    <p class="note">Moyenne pondérée par le nombre de groupes. <span style="color:#2e7d32">Vert</span> &lt; 28% &nbsp;·&nbsp; <span style="color:#e67e22">orange</span> 28-30% &nbsp;·&nbsp; <span style="color:#c0392b">rouge</span> &ge; 30%.</p>
-    <div id="chart5"></div>
   </section>
   <section class="panel" id="sites">
     <h2>Référentiel des sites</h2>
@@ -313,9 +307,9 @@ function aggBySite(){
  const a={};
  pgaFiltre().forEach(r=>{
   const conv=Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps), dem=r.aff+r.pec+r.reg+r.att, grp=r.sessions*r.gps;
-  a[r.site]=a[r.site]||{conv:0,dem:0,aff:0,pec:0,reg:0,att:0,txw:0,grp:0};
+  a[r.site]=a[r.site]||{conv:0,dem:0,aff:0,pec:0,reg:0,att:0,txw:0,grp:0,ses:0,pers:{}};
   a[r.site].conv+=conv;a[r.site].dem+=dem;a[r.site].aff+=r.aff;a[r.site].pec+=r.pec;a[r.site].reg+=r.reg;a[r.site].att+=r.att;
-  a[r.site].txw+=r.taux*grp;a[r.site].grp+=grp;
+  a[r.site].txw+=r.taux*grp;a[r.site].grp+=grp;a[r.site].ses+=r.sessions;if(r.periode)a[r.site].pers[r.periode]=1;
  });
  return a;
 }
@@ -328,21 +322,32 @@ function renderAnalyse(){
  let tc=0,td=0,txw=0,grp=0; sites.forEach(s=>{tc+=a[s].conv;td+=a[s].dem;txw+=a[s].txw;grp+=a[s].grp;});
  const txMoy=grp>0?txw/grp:0;
  document.getElementById("anaKpis").innerHTML=kpi(tc,"Convoqués (total)")+kpi(td,"Demande (total)")+kpi(tc-td,"Reste places (total)")+kpi((txMoy*100).toFixed(1)+"%","Taux absentéisme moyen");
- const maxC=Math.max(1,...sites.map(s=>Math.max(a[s].conv,a[s].dem)));
- document.getElementById("chart1").innerHTML=sites.map(s=>`<div style="margin:7px 0"><div style="font-size:12px;font-weight:600;margin-bottom:1px">${s}</div>${barRow('Convoqués',a[s].conv/maxC*100,'#1f4e79',a[s].conv)}${barRow('Demande',a[s].dem/maxC*100,'#9aa5b1',a[s].dem)}</div>`).join("");
- const maxR=Math.max(1,...sites.map(s=>Math.abs(a[s].conv-a[s].dem)));
- document.getElementById("chart2").innerHTML=sites.map(s=>{const r=a[s].conv-a[s].dem,pct=Math.abs(r)/maxR*50,pos=r>=0;
-  return `<div style="display:flex;align-items:center;gap:6px;margin:2px 0"><div style="width:110px;font-size:12px;text-align:right;flex-shrink:0">${s}</div><div style="flex:1;display:flex;height:18px"><div style="width:50%;display:flex;justify-content:flex-end"><div style="width:${pos?0:pct}%;background:#c0392b;height:100%;border-radius:4px 0 0 4px"></div></div><div style="width:1px;background:#999"></div><div style="width:50%"><div style="width:${pos?pct:0}%;background:#2e7d32;height:100%;border-radius:0 4px 4px 0"></div></div></div><div style="width:48px;font-size:12px;color:${pos?'#2e7d32':'#c0392b'};font-weight:700;flex-shrink:0">${r}</div></div>`;}).join("");
+ document.getElementById("cards").innerHTML=sites.map(s=>{
+  const v=a[s], reste=v.conv-v.dem, taux=v.grp>0?v.txw/v.grp:0;
+  const fill=v.conv>0?v.dem/v.conv*100:0;
+  const rc=reste<0?'#c0392b':(reste<20?'#e67e22':'#2e7d32');
+  const txc=taux>=0.30?'#c0392b':(taux>=0.28?'#e67e22':'#2e7d32');
+  const fillCol=fill>100?'#c0392b':'#1f4e79';
+  const pers=Object.keys(v.pers).sort().join(' · ');
+  const line=(lb,val)=>`<div style="display:flex;justify-content:space-between;font-size:13px;margin:3px 0"><span style="color:#5a6572">${lb}</span><b>${val}</b></div>`;
+  return `<div style="border:1px solid #e2e6ea;border-radius:10px;padding:12px 14px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+   <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+    <span style="font-weight:700;font-size:14px;color:#1f4e79"><i style="display:inline-block;width:10px;height:10px;background:${PGA_SITE_COL[s]||'#ccc'};border-radius:2px;margin-right:5px"></i>${s}</span>
+    <span style="font-size:11px;color:#8a94a0">${pers}</span></div>
+   ${line('Sessions',v.ses)}
+   ${line('Convoqués',v.conv)}
+   ${line('Demande',v.dem)}
+   <div style="display:flex;justify-content:space-between;font-size:13px;margin:3px 0"><span style="color:#5a6572">Reste places</span><b style="color:${rc}">${reste>=0?'+':''}${reste} ●</b></div>
+   <div style="margin:8px 0 2px"><div style="height:8px;background:#eef1f5;border-radius:5px;overflow:hidden"><div style="width:${Math.min(100,fill)}%;height:100%;background:${fillCol};border-radius:5px"></div></div>
+    <div style="font-size:11px;color:#8a94a0;margin-top:3px">Remplissage ${fill.toFixed(0)}%</div></div>
+   <div style="display:flex;justify-content:space-between;font-size:13px;border-top:1px solid #eef1f5;padding-top:6px;margin-top:6px"><span style="color:#5a6572">Taux absent.</span><b style="color:${txc}">${(taux*100).toFixed(1)}% ●</b></div>
+  </div>`;}).join("");
  const TCOL={aff:'#0072B2',pec:'#D55E00',reg:'#009E73',att:'#CC79A7'}, maxD=Math.max(1,...sites.map(s=>a[s].dem));
  document.getElementById("chart3").innerHTML=sites.map(s=>{const v=a[s],tot=v.dem||1;
   return `<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:110px;font-size:12px;text-align:right;flex-shrink:0">${s}</div><div style="flex:1;height:18px"><div style="display:flex;height:100%;border-radius:4px;overflow:hidden;background:#eef1f5;width:${v.dem/maxD*100}%">`+['aff','pec','reg','att'].map(k=>v[k]>0?`<div title="${k}: ${v[k]}" style="width:${v[k]/tot*100}%;background:${TCOL[k]}"></div>`:'').join('')+`</div></div><div style="width:48px;font-size:12px;flex-shrink:0">${v.dem}</div></div>`;}).join("");
  const rg={}; pgaFiltre().forEach(r=>{const k=(r.region||'?').toUpperCase().replace('PROVINCE ','').trim()||'?';rg[k]=(rg[k]||0)+Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps);});
  const rks=Object.keys(rg).sort((x,y)=>rg[y]-rg[x]), maxRg=Math.max(1,...rks.map(x=>rg[x]));
  document.getElementById("chart4").innerHTML=rks.map(x=>barRow(x,rg[x]/maxRg*100,'#1f4e79',rg[x],130)).join("");
- const tx={}; sites.forEach(s=>{tx[s]=a[s].grp>0?a[s].txw/a[s].grp:0;});
- const txks=Object.keys(tx).sort((x,y)=>tx[y]-tx[x]), maxTx=Math.max(0.01,...txks.map(x=>tx[x]));
- const txCol=v=>v>=0.30?'#c0392b':(v>=0.28?'#e67e22':'#2e7d32');
- document.getElementById("chart5").innerHTML=txks.map(s=>barRow(s,tx[s]/maxTx*100,txCol(tx[s]),(tx[s]*100).toFixed(1)+'%',110)).join("");
 }
 
 function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderEtat();renderAnalyse();renderSites();}
