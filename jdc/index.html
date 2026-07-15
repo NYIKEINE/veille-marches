@@ -108,7 +108,7 @@
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin:8px 0" id="anaKpis"></div>
     <div style="margin:6px 0"><b>Période PPA :</b> <select id="anaPeriode" onchange="anaPeriode=this.value;renderAnalyse()" style="width:auto;padding:6px"></select></div>
     <h3>Vue par site</h3>
-    <p class="note">Une carte par site. La barre = taux de <b>remplissage</b> (demande / convoqués). Pastille <b>Reste places</b> : <span style="color:#2e7d32">vert</span> marge, <span style="color:#e67e22">orange</span> serré, <span style="color:#c0392b">rouge</span> sur-réservation. Pastille <b>Taux</b> : <span style="color:#2e7d32">&lt;28%</span> / <span style="color:#e67e22">28-30%</span> / <span style="color:#c0392b">&ge;30%</span>.</p>
+    <p class="note">Une carte par site. La barre = taux de <b>remplissage</b> (demande / convoqués). Pastille <b>Reste places</b> : <span style="color:#2e7d32">vert</span> marge, <span style="color:#e67e22">orange</span> serré, <span style="color:#c0392b">rouge</span> sur-réservation. Pastille <b>Taux</b> (issu du <b>référentiel des sites</b>) : <span style="color:#2e7d32">&lt;28%</span> / <span style="color:#e67e22">28-30%</span> / <span style="color:#c0392b">&ge;30%</span>.</p>
     <div id="cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin:8px 0"></div>
     <h3>Répartition de la demande par type de jeune</h3>
     <div class="legend"><span><i style="background:#0072B2"></i>Affectables</span><span><i style="background:#D55E00"></i>PEC estimée</span><span><i style="background:#009E73"></i>Régularisés</span><span><i style="background:#CC79A7"></i>En attente</span></div>
@@ -141,6 +141,15 @@ const SITES={
  "MAIRIE VAO-ILE DES PINS":{g:1,cap:30,taux:0.30},
  "BA 186 TONTOUTA":{g:1,cap:25,taux:0.16}
 };
+// correspondance nom court PGA -> nom complet du référentiel des sites
+const SITE_MAP={
+ "BMP":"BATAILLON MIXTE DU PACIFIQUE NOUMEA","KONE":"RSMA KONE","NANDAI":"RIMaP NC DET NANDAI",
+ "POINDIMIE":"LYCEE POINDIMIE","WALLIS":"LYCEE D'ETAT WALLIS","LIFOU":"LYCEE POLYVALENT DES ILES LOYAUTE LIFOU",
+ "KOUMAC":"RSMA KOUMAC","MARE":"MAIRIE DE TADINE MARE","PLUM":"RIMaP NC PLUM",
+ "LA FOA":"CENTRE SOCIO CULTUREL LA FOA","IDP":"MAIRIE VAO-ILE DES PINS","TONTOUTA":"BA 186 TONTOUTA"
+};
+// taux d'absentéisme du référentiel pour un site PGA (null si le site n'y figure pas, ex. OUVEA)
+function refTaux(pgaSite){const full=SITE_MAP[pgaSite];return (full&&SITES[full])?SITES[full].taux:null;}
 const PERIODES=[
  {label:"2027-1P",d:"2027-01-01",f:"2027-03-31"},
  {label:"2027-2P",d:"2027-04-01",f:"2027-06-30"},
@@ -336,11 +345,11 @@ function renderAnalyse(){
  if(psel&&!psel.options.length){const pers=[...new Set(PGA.map(r=>r.periode))].sort();psel.innerHTML='<option>Toutes</option>'+pers.map(p=>`<option>${p}</option>`).join('');}
  if(psel)psel.value=anaPeriode;
  const a=aggBySite(), sites=Object.keys(a).sort((x,y)=>a[y].conv-a[x].conv);
- let tc=0,td=0,txw=0,grp=0; sites.forEach(s=>{tc+=a[s].conv;td+=a[s].dem;txw+=a[s].txw;grp+=a[s].grp;});
+ let tc=0,td=0,txw=0,grp=0; sites.forEach(s=>{tc+=a[s].conv;td+=a[s].dem;const t=refTaux(s)??(a[s].grp>0?a[s].txw/a[s].grp:0);txw+=t*a[s].grp;grp+=a[s].grp;});
  const txMoy=grp>0?txw/grp:0;
  document.getElementById("anaKpis").innerHTML=kpi(tc,"Convoqués (total)")+kpi(td,"Demande (total)")+kpi(tc-td,"Reste places (total)")+kpi((txMoy*100).toFixed(1)+"%","Taux absentéisme moyen");
  document.getElementById("cards").innerHTML=sites.map(s=>{
-  const v=a[s], reste=v.conv-v.dem, taux=v.grp>0?v.txw/v.grp:0;
+  const v=a[s], reste=v.conv-v.dem, taux=refTaux(s)??(v.grp>0?v.txw/v.grp:0);
   const fill=v.conv>0?v.dem/v.conv*100:0;
   const rc=reste<0?'#c0392b':(reste<20?'#e67e22':'#2e7d32');
   const txc=taux>=0.30?'#c0392b':(taux>=0.28?'#e67e22':'#2e7d32');
