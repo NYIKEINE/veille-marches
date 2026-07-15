@@ -258,24 +258,26 @@ function updSiteRef(site,k,v){SITES[site][k]=v;if(k!=='g'){SESS.forEach(s=>{if(s
 
 // ---- Etat des convocations (etape amont PGA) ----
 let PGA=[{"region":"Province SUD","periode":"1P27","site":"BMP","sessions":14,"groupes":42,"capgr":33,"capses":100,"aff":351,"pec":451,"reg":492,"att":259,"taux":0.22,"obs":"à volonté"},{"region":"Province SUD","periode":"2P27","site":"NANDAI","sessions":2,"groupes":6,"capgr":25,"capses":75,"aff":22,"pec":71,"reg":39,"att":7,"taux":0.26,"obs":""},{"region":"Province SUD","periode":"2P27","site":"KONE","sessions":3,"groupes":9,"capgr":25,"capses":75,"aff":27,"pec":85,"reg":45,"att":19,"taux":0.31,"obs":""},{"region":"Province SUD","periode":"2P27","site":"PLUM","sessions":1,"groupes":1,"capgr":25,"capses":25,"aff":9,"pec":10,"reg":12,"att":0,"taux":0.35,"obs":""},{"region":"Province SUD","periode":"2P27","site":"BMP","sessions":11,"groupes":33,"capgr":33,"capses":100,"aff":0,"pec":224,"reg":438,"att":580,"taux":0.22,"obs":"à volonté"},{"region":"Province SUD","periode":"2P27","site":"LA FOA","sessions":1,"groupes":3,"capgr":25,"capses":75,"aff":5,"pec":40,"reg":29,"att":6,"taux":0.26,"obs":"si besoin"},{"region":"Ile LOYAUTE","periode":"3P27","site":"IDP","sessions":2,"groupes":2,"capgr":25,"capses":25,"aff":32,"pec":12,"reg":21,"att":0,"taux":0.25,"obs":""},{"region":"Ile LOYAUTE","periode":"3P27","site":"MARE","sessions":1,"groupes":3,"capgr":25,"capses":25,"aff":83,"pec":75,"reg":24,"att":0,"taux":0.68,"obs":""},{"region":"Ile LOYAUTE","periode":"3P27","site":"LIFOU","sessions":1,"groupes":2,"capgr":25,"capses":75,"aff":20,"pec":58,"reg":30,"att":0,"taux":0.38,"obs":""},{"region":"Ile LOYAUTE","periode":"3P27","site":"WALLIS","sessions":1,"groupes":4,"capgr":25,"capses":75,"aff":22,"pec":55,"reg":72,"att":0,"taux":0.33,"obs":""},{"region":"Ile LOYAUTE","periode":"3P27","site":"OUVEA","sessions":1,"groupes":2,"capgr":25,"capses":75,"aff":14,"pec":36,"reg":24,"att":0,"taux":0,"obs":""},{"region":"Province SUD","periode":"3P27","site":"BMP","sessions":12,"groupes":36,"capgr":33,"capses":100,"aff":0,"pec":622,"reg":570,"att":341,"taux":0.29,"obs":"à volonté"},{"region":"Province Nord","periode":"3P27","site":"POINDIMIE","sessions":2,"groupes":6,"capgr":25,"capses":75,"aff":19,"pec":126,"reg":61,"att":0,"taux":0.21,"obs":""},{"region":"Province Nord","periode":"3P27","site":"NANDAI","sessions":2,"groupes":6,"capgr":25,"capses":75,"aff":0,"pec":42,"reg":20,"att":80,"taux":0.30,"obs":""},{"region":"Province Nord","periode":"3P27","site":"KOUMAC","sessions":3,"groupes":9,"capgr":25,"capses":75,"aff":30,"pec":107,"reg":81,"att":77,"taux":0.31,"obs":"fin d'année"},{"region":"Province Nord","periode":"3P27","site":"TONTOUTA","sessions":1,"groupes":1,"capgr":25,"capses":25,"aff":1,"pec":0,"reg":0,"att":31,"taux":0.26,"obs":""}];
+PGA.forEach(r=>{ if(r.gps==null) r.gps=(r.sessions>0)?Math.round(r.groupes/r.sessions):(r.groupes||1); });
 const PGA_SITE_COL={};
 function pgaColors(){const s=[...new Set(PGA.map(r=>r.site))].sort();s.forEach((x,i)=>PGA_SITE_COL[x]=PALETTE[i%8]);}
 function updPga(i,k,v){const txt=(k==='region'||k==='periode'||k==='site'||k==='obs');PGA[i][k]=txt?v:(+v||0);renderEtat();}
 function delPga(i){PGA.splice(i,1);renderEtat();}
-function addPga(){PGA.push({region:'',periode:'1P27',site:'',sessions:0,groupes:0,capgr:25,capses:25,aff:0,pec:0,reg:0,att:0,taux:0,obs:''});renderEtat();const t=document.getElementById("etatTable");const rw=t.querySelector("tr:nth-child(2)");if(rw){rw.classList.add("new-row");rw.scrollIntoView({behavior:"smooth",block:"center"});}}
+function addPga(){PGA.push({region:'',periode:'1P27',site:'',sessions:1,gps:3,groupes:3,capgr:25,capses:75,aff:0,pec:0,reg:0,att:0,taux:0,obs:''});renderEtat();const t=document.getElementById("etatTable");const rw=t.querySelector("tr:nth-child(2)");if(rw){rw.classList.add("new-row");rw.scrollIntoView({behavior:"smooth",block:"center"});}}
 function renderEtat(){
  pgaColors();
- let h=`<tr><th>Région</th><th>Période</th><th>Site</th><th>Sessions</th><th>Groupes</th><th>Cap./gr</th><th>Cap./session</th><th>Total cap.</th><th>Sur-conv/gr</th><th>Convoqués</th><th>Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Taux</th><th>Reste places</th><th>Observations</th><th></th></tr>`;
+ let h=`<tr><th>Région</th><th>Période</th><th>Site</th><th>Sessions</th><th>Gr./sess.</th><th>Groupes</th><th>Cap./gr</th><th>Cap./session</th><th>Total cap.</th><th>Sur-conv/gr</th><th>Convoqués</th><th>Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Taux</th><th>Reste places</th><th>Observations</th><th></th></tr>`;
  let T={se:0,gr:0,tc:0,cv:0,af:0,pc:0,rg:0,at:0,rs:0};
  PGA.forEach((r,i)=>{
+  const groupes=r.sessions*r.gps;
   const totalCap=r.capses*r.sessions;
   const surconv=r.capgr*(1+r.taux);
-  const convoques=Math.round(surconv*r.groupes);
+  const convoques=Math.round(surconv*groupes);
   const demande=r.aff+r.pec+r.reg+r.att;
   const reste=convoques-demande;
   const rc=reste<0?'#c0392b':(reste<20?'#e67e22':'#2e7d32');
   const tcol=r.taux>=0.30?'#c0392b':(r.taux>=0.28?'#e67e22':'#333');
-  T.se+=r.sessions;T.gr+=r.groupes;T.tc+=totalCap;T.cv+=convoques;T.af+=r.aff;T.pc+=r.pec;T.rg+=r.reg;T.at+=r.att;T.rs+=reste;
+  T.se+=r.sessions;T.gr+=groupes;T.tc+=totalCap;T.cv+=convoques;T.af+=r.aff;T.pc+=r.pec;T.rg+=r.reg;T.at+=r.att;T.rs+=reste;
   const num=(k,w)=>`<input type="number" value="${r[k]}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
   const txt=(k,w)=>`<input type="text" value="${(r[k]||'').replace(/"/g,'&quot;')}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
   h+=`<tr>
@@ -283,7 +285,8 @@ function renderEtat(){
    <td data-label="Période">${txt('periode',54)}</td>
    <td data-label="Site"><i style="display:inline-block;width:10px;height:10px;background:${PGA_SITE_COL[r.site]||'#ccc'};border-radius:2px;margin-right:4px"></i>${txt('site',80)}</td>
    <td data-label="Sessions">${num('sessions',46)}</td>
-   <td data-label="Groupes">${num('groupes',46)}</td>
+   <td data-label="Gr./sess.">${num('gps',46)}</td>
+   <td class="calc" data-label="Groupes">${groupes}</td>
    <td data-label="Cap./gr">${num('capgr',46)}</td>
    <td data-label="Cap./session">${num('capses',52)}</td>
    <td class="calc" data-label="Total cap.">${totalCap}</td>
@@ -299,7 +302,7 @@ function renderEtat(){
    <td data-label=""><button class="btn del" onclick="delPga(${i})">✕</button></td>
   </tr>`;
  });
- h+=`<tr class="tot"><td colspan="3" style="text-align:right">TOTAL</td><td>${T.se}</td><td>${T.gr}</td><td></td><td></td><td>${T.tc}</td><td></td><td>${T.cv}</td><td>${T.af}</td><td>${T.pc}</td><td>${T.rg}</td><td>${T.at}</td><td></td><td style="color:${T.rs<0?'#c0392b':'#2e7d32'}">${T.rs}</td><td></td><td></td></tr>`;
+ h+=`<tr class="tot"><td colspan="3" style="text-align:right">TOTAL</td><td>${T.se}</td><td></td><td>${T.gr}</td><td></td><td></td><td>${T.tc}</td><td></td><td>${T.cv}</td><td>${T.af}</td><td>${T.pc}</td><td>${T.rg}</td><td>${T.at}</td><td></td><td style="color:${T.rs<0?'#c0392b':'#2e7d32'}">${T.rs}</td><td></td><td></td></tr>`;
  document.getElementById("etatTable").innerHTML=h;
 }
 
@@ -307,7 +310,7 @@ function renderEtat(){
 function aggBySite(){
  const a={};
  PGA.forEach(r=>{
-  const conv=Math.round(r.capgr*(1+r.taux)*r.groupes), dem=r.aff+r.pec+r.reg+r.att;
+  const conv=Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps), dem=r.aff+r.pec+r.reg+r.att;
   a[r.site]=a[r.site]||{conv:0,dem:0,aff:0,pec:0,reg:0,att:0};
   a[r.site].conv+=conv;a[r.site].dem+=dem;a[r.site].aff+=r.aff;a[r.site].pec+=r.pec;a[r.site].reg+=r.reg;a[r.site].att+=r.att;
  });
@@ -326,7 +329,7 @@ function renderAnalyse(){
  const TCOL={aff:'#0072B2',pec:'#D55E00',reg:'#009E73',att:'#CC79A7'}, maxD=Math.max(1,...sites.map(s=>a[s].dem));
  document.getElementById("chart3").innerHTML=sites.map(s=>{const v=a[s],tot=v.dem||1;
   return `<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:110px;font-size:12px;text-align:right;flex-shrink:0">${s}</div><div style="flex:1;height:18px"><div style="display:flex;height:100%;border-radius:4px;overflow:hidden;background:#eef1f5;width:${v.dem/maxD*100}%">`+['aff','pec','reg','att'].map(k=>v[k]>0?`<div title="${k}: ${v[k]}" style="width:${v[k]/tot*100}%;background:${TCOL[k]}"></div>`:'').join('')+`</div></div><div style="width:48px;font-size:12px;flex-shrink:0">${v.dem}</div></div>`;}).join("");
- const rg={}; PGA.forEach(r=>{const k=(r.region||'?').toUpperCase().replace('PROVINCE ','').trim()||'?';rg[k]=(rg[k]||0)+Math.round(r.capgr*(1+r.taux)*r.groupes);});
+ const rg={}; PGA.forEach(r=>{const k=(r.region||'?').toUpperCase().replace('PROVINCE ','').trim()||'?';rg[k]=(rg[k]||0)+Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps);});
  const rks=Object.keys(rg).sort((x,y)=>rg[y]-rg[x]), maxRg=Math.max(1,...rks.map(x=>rg[x]));
  document.getElementById("chart4").innerHTML=rks.map(x=>barRow(x,rg[x]/maxRg*100,'#1f4e79',rg[x],130)).join("");
 }
