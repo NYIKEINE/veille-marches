@@ -49,13 +49,14 @@
     body{font-size:15px}
     header h1{font-size:17px}
     .kpi{min-width:120px}
-    #sessTable tr:first-child{display:none}
-    #sessTable, #sessTable tbody, #sessTable tr, #sessTable td{display:block;width:100%}
-    #sessTable tr{margin-bottom:12px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-    #sessTable td{border:0;display:flex;justify-content:space-between;align-items:center;text-align:right;padding:7px 8px}
-    #sessTable td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;margin-right:10px}
-    #sessTable td.calc{background:transparent}
-    #sessTable input, #sessTable select{width:auto;max-width:62%}
+    #sessTable tr:first-child, #etatTable tr:first-child{display:none}
+    #sessTable, #sessTable tbody, #sessTable tr, #sessTable td,
+    #etatTable, #etatTable tbody, #etatTable tr, #etatTable td{display:block;width:100%}
+    #sessTable tr, #etatTable tr{margin-bottom:12px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    #sessTable td, #etatTable td{border:0;display:flex;justify-content:space-between;align-items:center;text-align:right;padding:7px 8px}
+    #sessTable td::before, #etatTable td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;margin-right:10px}
+    #sessTable td.calc, #etatTable td.calc{background:transparent}
+    #sessTable input, #sessTable select, #etatTable input{width:auto;max-width:62%}
     #recapTable, #sitesTable{font-size:13px}
     .btn.add{width:100%;padding:15px;font-size:17px}
   }
@@ -74,6 +75,7 @@
   <button data-tab="sessions" class="active">Sessions</button>
   <button data-tab="calendrier">Calendrier</button>
   <button data-tab="recap">Récapitulatif</button>
+  <button data-tab="etat">État convocations</button>
   <button data-tab="sites">Référentiel sites</button>
 </nav>
 <main>
@@ -90,6 +92,12 @@
     <h2>Récapitulatif par période et par site</h2>
     <div style="overflow-x:auto"><table id="recapTable"></table></div>
     <p class="note">Nb JDC = nb groupes × nb jours. Convoqués = somme des totaux. Cohérence : Convoqués ÷ Nb JDC = convoqués par groupe.</p>
+  </section>
+  <section class="panel" id="etat">
+    <h2>État des convocations et capacités par site (étape amont PGA)</h2>
+    <div style="margin:6px 0 10px"><b>Période :</b> <select id="etatPeriode" onchange="curPeriode=this.value;renderEtat()" style="width:auto;padding:6px"></select></div>
+    <p class="note">Saisis par site le nombre de jeunes attendus : <b>affectables</b>, <b>PEC estimée</b>, <b>régularisés</b>, <b>en attente de dialogue (17-18 ans)</b>. L'appli calcule la <b>demande totale</b> et le <b>nombre de JDC à planifier</b> pour absorber les jeunes (demande ÷ capacité d'une session, arrondi au supérieur), puis l'écart avec ce que tu as déjà prévu dans l'onglet Sessions.</p>
+    <div style="overflow-x:auto"><table id="etatTable"></table></div>
   </section>
   <section class="panel" id="sites">
     <h2>Référentiel des sites</h2>
@@ -231,7 +239,43 @@ function renderSites(){
 }
 function updSiteRef(site,k,v){SITES[site][k]=v;if(k!=='g'){SESS.forEach(s=>{if(s.site===site)s[k]=v;});}renderAll();}
 
-function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderSites();}
+// ---- Etat des convocations (etape amont PGA) ----
+const DEMANDE={}; let curPeriode=PERIODES[0].label;
+function getDem(p,site){DEMANDE[p]=DEMANDE[p]||{};DEMANDE[p][site]=DEMANDE[p][site]||{aff:0,pec:0,reg:0,att:0};return DEMANDE[p][site];}
+function updDem(p,site,k,v){getDem(p,site)[k]=+v||0;renderEtat();}
+function planifSess(site,plabel){const p=PERIODES.find(x=>x.label===plabel);return SESS.filter(s=>s.site===site&&s.debut>=p.d&&s.debut<=p.f).length;}
+function renderEtat(){
+ const sel=document.getElementById("etatPeriode");
+ if(sel){ if(!sel.options.length){sel.innerHTML=PERIODES.map(p=>`<option>${p.label}</option>`).join("");} sel.value=curPeriode; }
+ const p=curPeriode;
+ let h=`<tr><th>Site</th><th>Affectables</th><th>PEC est.</th><th>Régularisés</th><th>Attente 17-18</th><th>Demande</th><th>Sur-conv/gr</th><th>Nb gr</th><th>Cap/session</th><th>JDC à planifier</th><th>Déjà prévues</th><th>Écart</th></tr>`;
+ let Td=0,Tp=0,Tj=0;
+ Object.keys(SITES).sort().forEach(site=>{
+  const r=SITES[site], dd=getDem(p,site), es=site.replace(/'/g,"\\'");
+  const dem=(+dd.aff||0)+(+dd.pec||0)+(+dd.reg||0)+(+dd.att||0);
+  const sc=Math.round(r.cap*(1+r.taux)), capS=sc*r.g;
+  const nbP=dem>0?Math.ceil(dem/capS):0, deja=planifSess(site,p), ec=nbP-deja;
+  Td+=dem;Tp+=nbP;Tj+=deja;
+  h+=`<tr>
+   <td style="text-align:left" data-label="Site"><i style="display:inline-block;width:12px;height:12px;background:${color(site)};border-radius:2px;margin-right:5px"></i>${site}</td>
+   <td data-label="Affectables"><input type="number" min="0" value="${dd.aff}" style="width:64px" onchange="updDem('${p}','${es}','aff',this.value)"></td>
+   <td data-label="PEC est."><input type="number" min="0" value="${dd.pec}" style="width:64px" onchange="updDem('${p}','${es}','pec',this.value)"></td>
+   <td data-label="Régularisés"><input type="number" min="0" value="${dd.reg}" style="width:64px" onchange="updDem('${p}','${es}','reg',this.value)"></td>
+   <td data-label="Attente 17-18"><input type="number" min="0" value="${dd.att}" style="width:64px" onchange="updDem('${p}','${es}','att',this.value)"></td>
+   <td class="calc" data-label="Demande"><b>${dem}</b></td>
+   <td class="calc" data-label="Sur-conv/gr">${sc}</td>
+   <td class="calc" data-label="Nb gr">${r.g}</td>
+   <td class="calc" data-label="Cap/session">${capS}</td>
+   <td class="calc" data-label="JDC à planifier" style="font-weight:700;color:var(--accent)">${nbP}</td>
+   <td class="calc" data-label="Déjà prévues">${deja}</td>
+   <td class="calc" data-label="Écart" style="color:${ec>0?'#c0392b':'#2e7d32'};font-weight:600">${ec>0?'+'+ec:ec}</td>
+  </tr>`;
+ });
+ h+=`<tr class="tot"><td style="text-align:right">TOTAL ${p}</td><td colspan="4"></td><td>${Td}</td><td colspan="3"></td><td>${Tp}</td><td>${Tj}</td><td>${Tp-Tj>0?'+'+(Tp-Tj):(Tp-Tj)}</td></tr>`;
+ document.getElementById("etatTable").innerHTML=h;
+}
+
+function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderEtat();renderSites();}
 function switchTab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===t));}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 renderAll();
