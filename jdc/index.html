@@ -270,7 +270,7 @@ function delPga(i){PGA.splice(i,1);renderEtat();renderAnalyse();}
 function addPga(){PGA.push({region:'',periode:'1P27',site:'',sessions:1,gps:3,groupes:3,capgr:25,capses:75,aff:0,pec:0,reg:0,att:0,taux:0,obs:''});renderEtat();renderAnalyse();const t=document.getElementById("etatTable");const rw=t.querySelector("tr:nth-child(2)");if(rw){rw.classList.add("new-row");rw.scrollIntoView({behavior:"smooth",block:"center"});}}
 function renderEtat(){
  pgaColors();
- let h=`<tr><th>Région</th><th>Période</th><th>Site</th><th>Sessions</th><th>Gr./sess.</th><th>Groupes</th><th>Cap./gr</th><th>Cap./session</th><th>Total cap.</th><th>Sur-conv/gr</th><th>Convoqués</th><th>Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Taux</th><th>Reste places</th><th>Observations</th><th></th></tr>`;
+ let h=`<tr><th>Période</th><th>Site</th><th>Sessions</th><th>Gr./sess.</th><th>Groupes</th><th>Total cap.</th><th>Sur-conv/gr</th><th>Convoqués</th><th>Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Total demande</th><th>Reste places</th><th>Observations</th><th></th></tr>`;
  let T={se:0,gr:0,tc:0,cv:0,af:0,pc:0,rg:0,at:0,rs:0};
  PGA.forEach((r,i)=>{
   const groupes=r.sessions*r.gps;
@@ -280,19 +280,15 @@ function renderEtat(){
   const demande=r.aff+r.pec+r.reg+r.att;
   const reste=convoques-demande;
   const rc=reste<0?'#c0392b':(reste<20?'#e67e22':'#2e7d32');
-  const tcol=r.taux>=0.30?'#c0392b':(r.taux>=0.28?'#e67e22':'#333');
   T.se+=r.sessions;T.gr+=groupes;T.tc+=totalCap;T.cv+=convoques;T.af+=r.aff;T.pc+=r.pec;T.rg+=r.reg;T.at+=r.att;T.rs+=reste;
   const num=(k,w)=>`<input type="number" value="${r[k]}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
   const txt=(k,w)=>`<input type="text" value="${(r[k]||'').replace(/"/g,'&quot;')}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
   h+=`<tr>
-   <td data-label="Région">${txt('region',90)}</td>
    <td data-label="Période">${txt('periode',54)}</td>
    <td data-label="Site"><i style="display:inline-block;width:10px;height:10px;background:${PGA_SITE_COL[r.site]||'#ccc'};border-radius:2px;margin-right:4px"></i>${txt('site',80)}</td>
    <td data-label="Sessions">${num('sessions',46)}</td>
    <td data-label="Gr./sess.">${num('gps',46)}</td>
    <td class="calc" data-label="Groupes">${groupes}</td>
-   <td data-label="Cap./gr">${num('capgr',46)}</td>
-   <td data-label="Cap./session">${num('capses',52)}</td>
    <td class="calc" data-label="Total cap.">${totalCap}</td>
    <td class="calc" data-label="Sur-conv/gr">${surconv.toFixed(2)}</td>
    <td class="calc" data-label="Convoqués"><b>${convoques}</b></td>
@@ -300,13 +296,13 @@ function renderEtat(){
    <td data-label="PEC est.">${num('pec',52)}</td>
    <td data-label="Régul.">${num('reg',52)}</td>
    <td data-label="Attente">${num('att',52)}</td>
-   <td data-label="Taux"><input type="number" step="0.01" value="${r.taux}" style="width:52px;color:${tcol}" onchange="updPga(${i},'taux',this.value)"></td>
+   <td class="calc" data-label="Total demande"><b>${demande}</b></td>
    <td class="calc" data-label="Reste places" style="color:${rc};font-weight:700">${reste}</td>
    <td data-label="Observations">${txt('obs',130)}</td>
    <td data-label=""><button class="btn del" onclick="delPga(${i})">✕</button></td>
   </tr>`;
  });
- h+=`<tr class="tot"><td colspan="3" style="text-align:right">TOTAL</td><td>${T.se}</td><td></td><td>${T.gr}</td><td></td><td></td><td>${T.tc}</td><td></td><td>${T.cv}</td><td>${T.af}</td><td>${T.pc}</td><td>${T.rg}</td><td>${T.at}</td><td></td><td style="color:${T.rs<0?'#c0392b':'#2e7d32'}">${T.rs}</td><td></td><td></td></tr>`;
+ h+=`<tr class="tot"><td colspan="2" style="text-align:right">TOTAL</td><td>${T.se}</td><td></td><td>${T.gr}</td><td>${T.tc}</td><td></td><td>${T.cv}</td><td>${T.af}</td><td>${T.pc}</td><td>${T.rg}</td><td>${T.at}</td><td>${T.af+T.pc+T.rg+T.at}</td><td style="color:${T.rs<0?'#c0392b':'#2e7d32'}">${T.rs}</td><td></td><td></td></tr>`;
  document.getElementById("etatTable").innerHTML=h;
 }
 
