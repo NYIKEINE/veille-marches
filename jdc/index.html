@@ -44,6 +44,7 @@
   .tot{font-weight:700;background:#dbe5f1}
   .note{font-size:12px;color:var(--muted);margin:8px 0}
   h2{font-size:16px;color:var(--accent)}
+  h3{font-size:14px;color:var(--accent);margin:18px 0 4px}
   /* ---- mobile : la table des sessions devient des cartes ---- */
   @media(max-width:760px){
     body{font-size:15px}
@@ -76,6 +77,7 @@
   <button data-tab="calendrier">Calendrier</button>
   <button data-tab="recap">Récapitulatif</button>
   <button data-tab="etat">État convocations</button>
+  <button data-tab="analyse">Analyse</button>
   <button data-tab="sites">Référentiel sites</button>
 </nav>
 <main>
@@ -98,6 +100,21 @@
     <button class="btn add" onclick="addPga()">+ Ajouter une ligne</button>
     <p class="note">Reprend ta feuille PGA 2027 (une ligne par site × période). Tu <b>saisis</b> : Région, Période (1P27/2P27/3P27), Site, Sessions, Groupes, Cap./groupe, Cap./session, Taux et les jeunes (Affectables, PEC, Régularisés, Attente). L'appli calcule : <b>Total cap.</b> = cap/session × sessions ; <b>Sur-convoc/groupe</b> = cap/groupe × (1+taux) (non arrondi) ; <b>Convoqués</b> = sur-convoc × groupes ; <b>Reste places</b> = Convoqués − demande (<span style="color:#c0392b">rouge</span> = sur-réservation, <span style="color:#2e7d32">vert</span> = marge ≥ 20).</p>
     <div style="overflow-x:auto"><table id="etatTable"></table></div>
+  </section>
+  <section class="panel" id="analyse">
+    <h2>Analyse graphique de la PGA 2027</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin:8px 0" id="anaKpis"></div>
+    <h3>Convoqués vs Demande par site</h3>
+    <p class="note">En bleu ce qu'on convoque, en gris le nombre de jeunes attendus. Le bleu doit dépasser le gris.</p>
+    <div id="chart1"></div>
+    <h3>Reste places par site (marge)</h3>
+    <p class="note"><span style="color:#2e7d32">Vert</span> = marge disponible ; <span style="color:#c0392b">rouge</span> = sur-réservation.</p>
+    <div id="chart2"></div>
+    <h3>Répartition de la demande par type de jeune</h3>
+    <div class="legend"><span><i style="background:#0072B2"></i>Affectables</span><span><i style="background:#D55E00"></i>PEC estimée</span><span><i style="background:#009E73"></i>Régularisés</span><span><i style="background:#CC79A7"></i>En attente</span></div>
+    <div id="chart3"></div>
+    <h3>Convoqués par région</h3>
+    <div id="chart4"></div>
   </section>
   <section class="panel" id="sites">
     <h2>Référentiel des sites</h2>
@@ -286,7 +303,35 @@ function renderEtat(){
  document.getElementById("etatTable").innerHTML=h;
 }
 
-function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderEtat();renderSites();}
+// ---- Analyse graphique ----
+function aggBySite(){
+ const a={};
+ PGA.forEach(r=>{
+  const conv=Math.round(r.capgr*(1+r.taux)*r.groupes), dem=r.aff+r.pec+r.reg+r.att;
+  a[r.site]=a[r.site]||{conv:0,dem:0,aff:0,pec:0,reg:0,att:0};
+  a[r.site].conv+=conv;a[r.site].dem+=dem;a[r.site].aff+=r.aff;a[r.site].pec+=r.pec;a[r.site].reg+=r.reg;a[r.site].att+=r.att;
+ });
+ return a;
+}
+function barRow(label,pct,col,val,lw){return `<div style="display:flex;align-items:center;gap:8px;margin:2px 0"><div style="width:${lw||80}px;font-size:12px;text-align:right;color:#333;flex-shrink:0">${label}</div><div style="flex:1;background:#eef1f5;border-radius:4px;height:18px"><div style="width:${Math.max(0,pct)}%;min-width:2px;background:${col};height:100%;border-radius:4px"></div></div><div style="width:52px;font-size:12px;flex-shrink:0">${val}</div></div>`;}
+function renderAnalyse(){
+ const a=aggBySite(), sites=Object.keys(a).sort((x,y)=>a[y].conv-a[x].conv);
+ let tc=0,td=0; sites.forEach(s=>{tc+=a[s].conv;td+=a[s].dem;});
+ document.getElementById("anaKpis").innerHTML=kpi(tc,"Convoqués (total)")+kpi(td,"Demande (total)")+kpi(tc-td,"Reste places (total)");
+ const maxC=Math.max(1,...sites.map(s=>Math.max(a[s].conv,a[s].dem)));
+ document.getElementById("chart1").innerHTML=sites.map(s=>`<div style="margin:7px 0"><div style="font-size:12px;font-weight:600;margin-bottom:1px">${s}</div>${barRow('Convoqués',a[s].conv/maxC*100,'#1f4e79',a[s].conv)}${barRow('Demande',a[s].dem/maxC*100,'#9aa5b1',a[s].dem)}</div>`).join("");
+ const maxR=Math.max(1,...sites.map(s=>Math.abs(a[s].conv-a[s].dem)));
+ document.getElementById("chart2").innerHTML=sites.map(s=>{const r=a[s].conv-a[s].dem,pct=Math.abs(r)/maxR*50,pos=r>=0;
+  return `<div style="display:flex;align-items:center;gap:6px;margin:2px 0"><div style="width:110px;font-size:12px;text-align:right;flex-shrink:0">${s}</div><div style="flex:1;display:flex;height:18px"><div style="width:50%;display:flex;justify-content:flex-end"><div style="width:${pos?0:pct}%;background:#c0392b;height:100%;border-radius:4px 0 0 4px"></div></div><div style="width:1px;background:#999"></div><div style="width:50%"><div style="width:${pos?pct:0}%;background:#2e7d32;height:100%;border-radius:0 4px 4px 0"></div></div></div><div style="width:48px;font-size:12px;color:${pos?'#2e7d32':'#c0392b'};font-weight:700;flex-shrink:0">${r}</div></div>`;}).join("");
+ const TCOL={aff:'#0072B2',pec:'#D55E00',reg:'#009E73',att:'#CC79A7'}, maxD=Math.max(1,...sites.map(s=>a[s].dem));
+ document.getElementById("chart3").innerHTML=sites.map(s=>{const v=a[s],tot=v.dem||1;
+  return `<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:110px;font-size:12px;text-align:right;flex-shrink:0">${s}</div><div style="flex:1;height:18px"><div style="display:flex;height:100%;border-radius:4px;overflow:hidden;background:#eef1f5;width:${v.dem/maxD*100}%">`+['aff','pec','reg','att'].map(k=>v[k]>0?`<div title="${k}: ${v[k]}" style="width:${v[k]/tot*100}%;background:${TCOL[k]}"></div>`:'').join('')+`</div></div><div style="width:48px;font-size:12px;flex-shrink:0">${v.dem}</div></div>`;}).join("");
+ const rg={}; PGA.forEach(r=>{const k=(r.region||'?').toUpperCase().replace('PROVINCE ','').trim()||'?';rg[k]=(rg[k]||0)+Math.round(r.capgr*(1+r.taux)*r.groupes);});
+ const rks=Object.keys(rg).sort((x,y)=>rg[y]-rg[x]), maxRg=Math.max(1,...rks.map(x=>rg[x]));
+ document.getElementById("chart4").innerHTML=rks.map(x=>barRow(x,rg[x]/maxRg*100,'#1f4e79',rg[x],130)).join("");
+}
+
+function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderEtat();renderAnalyse();renderSites();}
 function switchTab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===t));}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 renderAll();
