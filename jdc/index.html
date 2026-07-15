@@ -96,7 +96,7 @@
   <section class="panel" id="etat">
     <h2>État des convocations et capacités par site (étape amont PGA)</h2>
     <div style="margin:6px 0 10px"><b>Période :</b> <select id="etatPeriode" onchange="curPeriode=this.value;renderEtat()" style="width:auto;padding:6px"></select></div>
-    <p class="note">Saisis par site le nombre de jeunes attendus : <b>affectables</b>, <b>PEC estimée</b>, <b>régularisés</b>, <b>en attente de dialogue (17-18 ans)</b>. L'appli calcule la <b>demande totale</b> et le <b>nombre de JDC à planifier</b> pour absorber les jeunes (demande ÷ capacité d'une session, arrondi au supérieur), puis l'écart avec ce que tu as déjà prévu dans l'onglet Sessions.</p>
+    <p class="note">Reprend ta feuille « Tableau JDC ». Tu <b>saisis</b> : le nombre de <b>Sessions</b> prévues, la <b>capacité cible/groupe</b>, le <b>taux</b>, et les jeunes attendus (<b>affectables, PEC estimée, régularisés, en attente de dialogue 17-18 ans</b>). L'appli calcule Groupes, Cap/session, Total cap., Sur-convoc/groupe (= cap × (1+taux)), Convoqués, et le <b>Reste places</b> (= Convoqués − demande : <span style="color:#c0392b">rouge</span> = sur-réservation, <span style="color:#2e7d32">vert</span> = marge ≥ 20). La colonne <b>JDC à prévoir</b> indique le nombre de sessions suffisant pour absorber la demande.</p>
     <div style="overflow-x:auto"><table id="etatTable"></table></div>
   </section>
   <section class="panel" id="sites">
@@ -241,37 +241,43 @@ function updSiteRef(site,k,v){SITES[site][k]=v;if(k!=='g'){SESS.forEach(s=>{if(s
 
 // ---- Etat des convocations (etape amont PGA) ----
 const DEMANDE={}; let curPeriode=PERIODES[0].label;
-function getDem(p,site){DEMANDE[p]=DEMANDE[p]||{};DEMANDE[p][site]=DEMANDE[p][site]||{aff:0,pec:0,reg:0,att:0};return DEMANDE[p][site];}
+function getDem(p,site){DEMANDE[p]=DEMANDE[p]||{};if(!DEMANDE[p][site]){const r=SITES[site];DEMANDE[p][site]={sessions:0,cap:r.cap,taux:r.taux,aff:0,pec:0,reg:0,att:0};}return DEMANDE[p][site];}
 function updDem(p,site,k,v){getDem(p,site)[k]=+v||0;renderEtat();}
-function planifSess(site,plabel){const p=PERIODES.find(x=>x.label===plabel);return SESS.filter(s=>s.site===site&&s.debut>=p.d&&s.debut<=p.f).length;}
 function renderEtat(){
  const sel=document.getElementById("etatPeriode");
  if(sel){ if(!sel.options.length){sel.innerHTML=PERIODES.map(p=>`<option>${p.label}</option>`).join("");} sel.value=curPeriode; }
  const p=curPeriode;
- let h=`<tr><th>Site</th><th>Affectables</th><th>PEC est.</th><th>Régularisés</th><th>Attente 17-18</th><th>Demande</th><th>Sur-conv/gr</th><th>Nb gr</th><th>Cap/session</th><th>JDC à planifier</th><th>Déjà prévues</th><th>Écart</th></tr>`;
- let Td=0,Tp=0,Tj=0;
+ let h=`<tr><th>Site</th><th>Sessions</th><th>Groupes</th><th>Cap./gr</th><th>Cap./session</th><th>Total cap.</th><th>Sur-conv/gr</th><th>Convoqués</th><th>Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Taux</th><th>Reste places</th><th>JDC à prévoir</th></tr>`;
+ let T={s:0,gr:0,tc:0,cv:0,af:0,pc:0,rg:0,at:0,rs:0};
  Object.keys(SITES).sort().forEach(site=>{
-  const r=SITES[site], dd=getDem(p,site), es=site.replace(/'/g,"\\'");
-  const dem=(+dd.aff||0)+(+dd.pec||0)+(+dd.reg||0)+(+dd.att||0);
-  const sc=Math.round(r.cap*(1+r.taux)), capS=sc*r.g;
-  const nbP=dem>0?Math.ceil(dem/capS):0, deja=planifSess(site,p), ec=nbP-deja;
-  Td+=dem;Tp+=nbP;Tj+=deja;
+  const r=SITES[site], dd=getDem(p,site), es=site.replace(/'/g,"\\'"), g=r.g;
+  const groupes=(dd.sessions||0)*g, capSes=(dd.cap||0)*g, totCap=capSes*(dd.sessions||0);
+  const sc=Math.round((dd.cap||0)*(1+(dd.taux||0))), convS=sc*g, conv=convS*(dd.sessions||0);
+  const dem=(dd.aff||0)+(dd.pec||0)+(dd.reg||0)+(dd.att||0), reste=conv-dem;
+  const aPrev=convS>0?Math.ceil(dem/convS):0;
+  const rc=reste<0?'#c0392b':(reste<20?'#e67e22':'#2e7d32');
+  const tcol=dd.taux>=0.30?'#c0392b':(dd.taux>=0.28?'#e67e22':'#333');
+  T.s+=dd.sessions||0;T.gr+=groupes;T.tc+=totCap;T.cv+=conv;T.af+=dd.aff||0;T.pc+=dd.pec||0;T.rg+=dd.reg||0;T.at+=dd.att||0;T.rs+=reste;
+  const inp=(k,val,w)=>`<input type="number" min="0" value="${val}" style="width:${w}px" onchange="updDem('${p}','${es}','${k}',this.value)">`;
   h+=`<tr>
    <td style="text-align:left" data-label="Site"><i style="display:inline-block;width:12px;height:12px;background:${color(site)};border-radius:2px;margin-right:5px"></i>${site}</td>
-   <td data-label="Affectables"><input type="number" min="0" value="${dd.aff}" style="width:64px" onchange="updDem('${p}','${es}','aff',this.value)"></td>
-   <td data-label="PEC est."><input type="number" min="0" value="${dd.pec}" style="width:64px" onchange="updDem('${p}','${es}','pec',this.value)"></td>
-   <td data-label="Régularisés"><input type="number" min="0" value="${dd.reg}" style="width:64px" onchange="updDem('${p}','${es}','reg',this.value)"></td>
-   <td data-label="Attente 17-18"><input type="number" min="0" value="${dd.att}" style="width:64px" onchange="updDem('${p}','${es}','att',this.value)"></td>
-   <td class="calc" data-label="Demande"><b>${dem}</b></td>
+   <td data-label="Sessions">${inp('sessions',dd.sessions,52)}</td>
+   <td class="calc" data-label="Groupes">${groupes}</td>
+   <td data-label="Cap./gr">${inp('cap',dd.cap,52)}</td>
+   <td class="calc" data-label="Cap./session">${capSes}</td>
+   <td class="calc" data-label="Total cap.">${totCap}</td>
    <td class="calc" data-label="Sur-conv/gr">${sc}</td>
-   <td class="calc" data-label="Nb gr">${r.g}</td>
-   <td class="calc" data-label="Cap/session">${capS}</td>
-   <td class="calc" data-label="JDC à planifier" style="font-weight:700;color:var(--accent)">${nbP}</td>
-   <td class="calc" data-label="Déjà prévues">${deja}</td>
-   <td class="calc" data-label="Écart" style="color:${ec>0?'#c0392b':'#2e7d32'};font-weight:600">${ec>0?'+'+ec:ec}</td>
+   <td class="calc" data-label="Convoqués"><b>${conv}</b></td>
+   <td data-label="Affectables">${inp('aff',dd.aff,56)}</td>
+   <td data-label="PEC est.">${inp('pec',dd.pec,56)}</td>
+   <td data-label="Régul.">${inp('reg',dd.reg,56)}</td>
+   <td data-label="Attente">${inp('att',dd.att,56)}</td>
+   <td data-label="Taux"><input type="number" min="0" max="1" step="0.01" value="${dd.taux}" style="width:56px;color:${tcol}" onchange="updDem('${p}','${es}','taux',this.value)"></td>
+   <td class="calc" data-label="Reste places" style="color:${rc};font-weight:700">${reste}</td>
+   <td class="calc" data-label="JDC à prévoir" style="color:var(--accent);font-weight:600">${aPrev}</td>
   </tr>`;
  });
- h+=`<tr class="tot"><td style="text-align:right">TOTAL ${p}</td><td colspan="4"></td><td>${Td}</td><td colspan="3"></td><td>${Tp}</td><td>${Tj}</td><td>${Tp-Tj>0?'+'+(Tp-Tj):(Tp-Tj)}</td></tr>`;
+ h+=`<tr class="tot"><td style="text-align:right">TOTAL ${p}</td><td>${T.s}</td><td>${T.gr}</td><td></td><td></td><td>${T.tc}</td><td></td><td>${T.cv}</td><td>${T.af}</td><td>${T.pc}</td><td>${T.rg}</td><td>${T.at}</td><td></td><td style="color:${T.rs<0?'#c0392b':'#2e7d32'}">${T.rs}</td><td></td></tr>`;
  document.getElementById("etatTable").innerHTML=h;
 }
 
