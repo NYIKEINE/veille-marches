@@ -178,7 +178,8 @@ document.getElementById("addBtn").onclick=()=>{
 };
 
 function renderCalendar(){
- const map={};SESS.forEach(s=>{let cur=d(s.debut),end=d(s.fin);while(cur<=end){map[cur.toISOString().slice(0,10)]=s;cur.setDate(cur.getDate()+1);}});
+ const isoLoc=dt=>dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,'0')+"-"+String(dt.getDate()).padStart(2,'0');
+ const map={};SESS.forEach(s=>{let cur=d(s.debut),end=d(s.fin);while(cur<=end){map[isoLoc(cur)]=s;cur.setDate(cur.getDate()+1);}});
  const months=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
  const wd=["Lu","Ma","Me","Je","Ve","Sa","Di"];
  let g="";
