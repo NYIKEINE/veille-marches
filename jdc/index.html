@@ -116,6 +116,9 @@
     <div id="chart3"></div>
     <h3>Convoqués par région</h3>
     <div id="chart4"></div>
+    <h3>Taux d'absentéisme par site</h3>
+    <p class="note">Moyenne pondérée par le nombre de groupes. <span style="color:#2e7d32">Vert</span> &lt; 28% &nbsp;·&nbsp; <span style="color:#e67e22">orange</span> 28-30% &nbsp;·&nbsp; <span style="color:#c0392b">rouge</span> &ge; 30%.</p>
+    <div id="chart5"></div>
   </section>
   <section class="panel" id="sites">
     <h2>Référentiel des sites</h2>
@@ -313,9 +316,10 @@ function pgaFiltre(){return PGA.filter(r=>anaPeriode==="Toutes"||r.periode===ana
 function aggBySite(){
  const a={};
  pgaFiltre().forEach(r=>{
-  const conv=Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps), dem=r.aff+r.pec+r.reg+r.att;
-  a[r.site]=a[r.site]||{conv:0,dem:0,aff:0,pec:0,reg:0,att:0};
+  const conv=Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps), dem=r.aff+r.pec+r.reg+r.att, grp=r.sessions*r.gps;
+  a[r.site]=a[r.site]||{conv:0,dem:0,aff:0,pec:0,reg:0,att:0,txw:0,grp:0};
   a[r.site].conv+=conv;a[r.site].dem+=dem;a[r.site].aff+=r.aff;a[r.site].pec+=r.pec;a[r.site].reg+=r.reg;a[r.site].att+=r.att;
+  a[r.site].txw+=r.taux*grp;a[r.site].grp+=grp;
  });
  return a;
 }
@@ -325,8 +329,9 @@ function renderAnalyse(){
  if(psel&&!psel.options.length){const pers=[...new Set(PGA.map(r=>r.periode))].sort();psel.innerHTML='<option>Toutes</option>'+pers.map(p=>`<option>${p}</option>`).join('');}
  if(psel)psel.value=anaPeriode;
  const a=aggBySite(), sites=Object.keys(a).sort((x,y)=>a[y].conv-a[x].conv);
- let tc=0,td=0; sites.forEach(s=>{tc+=a[s].conv;td+=a[s].dem;});
- document.getElementById("anaKpis").innerHTML=kpi(tc,"Convoqués (total)")+kpi(td,"Demande (total)")+kpi(tc-td,"Reste places (total)");
+ let tc=0,td=0,txw=0,grp=0; sites.forEach(s=>{tc+=a[s].conv;td+=a[s].dem;txw+=a[s].txw;grp+=a[s].grp;});
+ const txMoy=grp>0?txw/grp:0;
+ document.getElementById("anaKpis").innerHTML=kpi(tc,"Convoqués (total)")+kpi(td,"Demande (total)")+kpi(tc-td,"Reste places (total)")+kpi((txMoy*100).toFixed(1)+"%","Taux absentéisme moyen");
  const maxC=Math.max(1,...sites.map(s=>Math.max(a[s].conv,a[s].dem)));
  document.getElementById("chart1").innerHTML=sites.map(s=>`<div style="margin:7px 0"><div style="font-size:12px;font-weight:600;margin-bottom:1px">${s}</div>${barRow('Convoqués',a[s].conv/maxC*100,'#1f4e79',a[s].conv)}${barRow('Demande',a[s].dem/maxC*100,'#9aa5b1',a[s].dem)}</div>`).join("");
  const maxR=Math.max(1,...sites.map(s=>Math.abs(a[s].conv-a[s].dem)));
@@ -338,6 +343,10 @@ function renderAnalyse(){
  const rg={}; pgaFiltre().forEach(r=>{const k=(r.region||'?').toUpperCase().replace('PROVINCE ','').trim()||'?';rg[k]=(rg[k]||0)+Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps);});
  const rks=Object.keys(rg).sort((x,y)=>rg[y]-rg[x]), maxRg=Math.max(1,...rks.map(x=>rg[x]));
  document.getElementById("chart4").innerHTML=rks.map(x=>barRow(x,rg[x]/maxRg*100,'#1f4e79',rg[x],130)).join("");
+ const tx={}; sites.forEach(s=>{tx[s]=a[s].grp>0?a[s].txw/a[s].grp:0;});
+ const txks=Object.keys(tx).sort((x,y)=>tx[y]-tx[x]), maxTx=Math.max(0.01,...txks.map(x=>tx[x]));
+ const txCol=v=>v>=0.30?'#c0392b':(v>=0.28?'#e67e22':'#2e7d32');
+ document.getElementById("chart5").innerHTML=txks.map(s=>barRow(s,tx[s]/maxTx*100,txCol(tx[s]),(tx[s]*100).toFixed(1)+'%',110)).join("");
 }
 
 function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderEtat();renderAnalyse();renderSites();}
