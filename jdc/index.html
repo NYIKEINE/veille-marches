@@ -98,7 +98,7 @@
   <section class="panel" id="etat">
     <h2>PGA 2027 — État des convocations et capacités par site</h2>
     <button class="btn add" onclick="addPga()">+ Ajouter une ligne</button>
-    <p class="note">Reprend ta feuille PGA 2027 (une ligne par site × période). Tu <b>saisis</b> : Région, Période (1P27/2P27/3P27), Site, Sessions, Groupes, Cap./groupe, Cap./session, Taux et les jeunes (Affectables, PEC, Régularisés, Attente). L'appli calcule : <b>Total cap.</b> = cap/session × sessions ; <b>Sur-convoc/groupe</b> = cap/groupe × (1+taux) (non arrondi) ; <b>Convoqués</b> = sur-convoc × groupes ; <b>Reste places</b> = Convoqués − demande (<span style="color:#c0392b">rouge</span> = sur-réservation, <span style="color:#2e7d32">vert</span> = marge ≥ 20).</p>
+    <p class="note">Reprend ta feuille PGA 2027 (une ligne par site × période). Tu <b>saisis</b> : Région, Période (1P27/2P27/3P27), Site, Sessions, <b>Gr./session</b> (nombre de groupes par session), Cap./groupe, Cap./session, Taux et les jeunes (Affectables, PEC, Régularisés, Attente). L'appli calcule : <b>Groupes = Sessions × Gr./session</b> ; <b>Total cap.</b> = cap/session × sessions ; <b>Sur-convoc/groupe</b> = cap/groupe × (1+taux) (non arrondi) ; <b>Convoqués</b> = sur-convoc × groupes ; <b>Reste places</b> = Convoqués − demande (<span style="color:#c0392b">rouge</span> = sur-réservation, <span style="color:#2e7d32">vert</span> = marge ≥ 20).</p>
     <div style="overflow-x:auto"><table id="etatTable"></table></div>
   </section>
   <section class="panel" id="analyse">
