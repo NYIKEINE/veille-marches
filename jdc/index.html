@@ -139,14 +139,16 @@ const SITES={
  "RIMaP NC PLUM":{g:1,cap:30,taux:0.34},
  "CENTRE SOCIO CULTUREL LA FOA":{g:1,cap:35,taux:0.26},
  "MAIRIE VAO-ILE DES PINS":{g:1,cap:30,taux:0.30},
- "BA 186 TONTOUTA":{g:1,cap:25,taux:0.16}
+ "BA 186 TONTOUTA":{g:1,cap:25,taux:0.16},
+ "OUVEA":{g:2,cap:25,taux:0.43}
 };
 // correspondance nom court PGA -> nom complet du référentiel des sites
 const SITE_MAP={
  "BMP":"BATAILLON MIXTE DU PACIFIQUE NOUMEA","KONE":"RSMA KONE","NANDAI":"RIMaP NC DET NANDAI",
  "POINDIMIE":"LYCEE POINDIMIE","WALLIS":"LYCEE D'ETAT WALLIS","LIFOU":"LYCEE POLYVALENT DES ILES LOYAUTE LIFOU",
  "KOUMAC":"RSMA KOUMAC","MARE":"MAIRIE DE TADINE MARE","PLUM":"RIMaP NC PLUM",
- "LA FOA":"CENTRE SOCIO CULTUREL LA FOA","IDP":"MAIRIE VAO-ILE DES PINS","TONTOUTA":"BA 186 TONTOUTA"
+ "LA FOA":"CENTRE SOCIO CULTUREL LA FOA","IDP":"MAIRIE VAO-ILE DES PINS","TONTOUTA":"BA 186 TONTOUTA",
+ "OUVEA":"OUVEA"
 };
 // taux d'absentéisme du référentiel pour un site PGA (null si le site n'y figure pas, ex. OUVEA)
 function refTaux(pgaSite){const full=SITE_MAP[pgaSite];return (full&&SITES[full])?SITES[full].taux:null;}
