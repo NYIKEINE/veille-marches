@@ -57,7 +57,11 @@
     #sessTable td.calc{background:transparent}
     #sessTable input, #sessTable select{width:auto;max-width:62%}
     #recapTable, #sitesTable{font-size:13px}
+    .btn.add{width:100%;padding:15px;font-size:17px}
   }
+  .btn.add{font-size:15px;font-weight:600}
+  @keyframes flash{0%{background:#c8e6c9}100%{background:#fff}}
+  .new-row{animation:flash 2s ease}
 </style>
 </head>
 <body>
@@ -164,7 +168,14 @@ function renderSessions(){
 function upd(i,k,v){SESS[i][k]=v;renderAll();}
 function updSite(i,v){SESS[i].site=v;const r=SITES[v];SESS[i].cap=r.cap;SESS[i].taux=r.taux;renderAll();}
 function del(i){SESS.splice(i,1);renderAll();}
-document.getElementById("addBtn").onclick=()=>{const first=Object.keys(SITES).sort()[0];const r=SITES[first];SESS.push({debut:"2027-01-01",fin:"2027-01-01",site:first,cap:r.cap,taux:r.taux,remarque:""});renderAll();switchTab("sessions");};
+document.getElementById("addBtn").onclick=()=>{
+ const first=Object.keys(SITES).sort()[0];const r=SITES[first];
+ SESS.unshift({debut:"2027-01-01",fin:"2027-01-01",site:first,cap:r.cap,taux:r.taux,remarque:""});
+ renderAll();switchTab("sessions");
+ const tbl=document.getElementById("sessTable");
+ const row=tbl.querySelector("tr:nth-child(2)");
+ if(row){row.classList.add("new-row");row.scrollIntoView({behavior:"smooth",block:"center"});}
+};
 
 function renderCalendar(){
  const map={};SESS.forEach(s=>{let cur=d(s.debut),end=d(s.fin);while(cur<=end){map[cur.toISOString().slice(0,10)]=s;cur.setDate(cur.getDate()+1);}});
