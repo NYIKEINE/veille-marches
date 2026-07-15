@@ -104,6 +104,7 @@
   <section class="panel" id="analyse">
     <h2>Analyse graphique de la PGA 2027</h2>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin:8px 0" id="anaKpis"></div>
+    <div style="margin:6px 0"><b>Période PPA :</b> <select id="anaPeriode" onchange="anaPeriode=this.value;renderAnalyse()" style="width:auto;padding:6px"></select></div>
     <h3>Convoqués vs Demande par site</h3>
     <p class="note">En bleu ce qu'on convoque, en gris le nombre de jeunes attendus. Le bleu doit dépasser le gris.</p>
     <div id="chart1"></div>
@@ -163,9 +164,9 @@ function periode(s){const dd=s.debut;for(const p of PERIODES){if(dd>=p.d&&dd<=p.
 function fdate(iso){if(!iso)return"";const[y,m,day]=iso.split("-");return day+"/"+m+"/"+y;}
 
 function renderKpis(){
- let tc=0,tj=0;SESS.forEach(s=>{tc+=total(s);tj+=nbJDC(s);});
+ let tc=0;SESS.forEach(s=>{tc+=total(s);});
  document.getElementById("kpis").innerHTML=
-  kpi(tc,"Total convoqués 2027")+kpi(tj,"Total Nb JDC (groupes × jours)")+kpi(SESS.length,"Nombre de sessions");
+  kpi(tc,"Total convoqués 2027")+kpi(SESS.length,"Nombre de sessions JDC");
 }
 function kpi(v,l){return `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;}
 
@@ -307,9 +308,11 @@ function renderEtat(){
 }
 
 // ---- Analyse graphique ----
+let anaPeriode="Toutes";
+function pgaFiltre(){return PGA.filter(r=>anaPeriode==="Toutes"||r.periode===anaPeriode);}
 function aggBySite(){
  const a={};
- PGA.forEach(r=>{
+ pgaFiltre().forEach(r=>{
   const conv=Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps), dem=r.aff+r.pec+r.reg+r.att;
   a[r.site]=a[r.site]||{conv:0,dem:0,aff:0,pec:0,reg:0,att:0};
   a[r.site].conv+=conv;a[r.site].dem+=dem;a[r.site].aff+=r.aff;a[r.site].pec+=r.pec;a[r.site].reg+=r.reg;a[r.site].att+=r.att;
@@ -318,6 +321,9 @@ function aggBySite(){
 }
 function barRow(label,pct,col,val,lw){return `<div style="display:flex;align-items:center;gap:8px;margin:2px 0"><div style="width:${lw||80}px;font-size:12px;text-align:right;color:#333;flex-shrink:0">${label}</div><div style="flex:1;background:#eef1f5;border-radius:4px;height:18px"><div style="width:${Math.max(0,pct)}%;min-width:2px;background:${col};height:100%;border-radius:4px"></div></div><div style="width:52px;font-size:12px;flex-shrink:0">${val}</div></div>`;}
 function renderAnalyse(){
+ const psel=document.getElementById("anaPeriode");
+ if(psel&&!psel.options.length){const pers=[...new Set(PGA.map(r=>r.periode))].sort();psel.innerHTML='<option>Toutes</option>'+pers.map(p=>`<option>${p}</option>`).join('');}
+ if(psel)psel.value=anaPeriode;
  const a=aggBySite(), sites=Object.keys(a).sort((x,y)=>a[y].conv-a[x].conv);
  let tc=0,td=0; sites.forEach(s=>{tc+=a[s].conv;td+=a[s].dem;});
  document.getElementById("anaKpis").innerHTML=kpi(tc,"Convoqués (total)")+kpi(td,"Demande (total)")+kpi(tc-td,"Reste places (total)");
@@ -329,7 +335,7 @@ function renderAnalyse(){
  const TCOL={aff:'#0072B2',pec:'#D55E00',reg:'#009E73',att:'#CC79A7'}, maxD=Math.max(1,...sites.map(s=>a[s].dem));
  document.getElementById("chart3").innerHTML=sites.map(s=>{const v=a[s],tot=v.dem||1;
   return `<div style="display:flex;align-items:center;gap:6px;margin:3px 0"><div style="width:110px;font-size:12px;text-align:right;flex-shrink:0">${s}</div><div style="flex:1;height:18px"><div style="display:flex;height:100%;border-radius:4px;overflow:hidden;background:#eef1f5;width:${v.dem/maxD*100}%">`+['aff','pec','reg','att'].map(k=>v[k]>0?`<div title="${k}: ${v[k]}" style="width:${v[k]/tot*100}%;background:${TCOL[k]}"></div>`:'').join('')+`</div></div><div style="width:48px;font-size:12px;flex-shrink:0">${v.dem}</div></div>`;}).join("");
- const rg={}; PGA.forEach(r=>{const k=(r.region||'?').toUpperCase().replace('PROVINCE ','').trim()||'?';rg[k]=(rg[k]||0)+Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps);});
+ const rg={}; pgaFiltre().forEach(r=>{const k=(r.region||'?').toUpperCase().replace('PROVINCE ','').trim()||'?';rg[k]=(rg[k]||0)+Math.round(r.capgr*(1+r.taux)*r.sessions*r.gps);});
  const rks=Object.keys(rg).sort((x,y)=>rg[y]-rg[x]), maxRg=Math.max(1,...rks.map(x=>rg[x]));
  document.getElementById("chart4").innerHTML=rks.map(x=>barRow(x,rg[x]/maxRg*100,'#1f4e79',rg[x],130)).join("");
 }
