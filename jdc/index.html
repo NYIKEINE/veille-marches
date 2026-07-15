@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planification JDC 2027 - CSN</title>
+<style>
+  :root{ --accent:#1f4e79; --bg:#f4f5f7; --card:#fff; --line:#e2e5ea; --muted:#666; }
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;margin:0;background:var(--bg);color:#222;font-size:14px}
+  header{background:var(--accent);color:#fff;padding:14px 18px}
+  header h1{margin:0;font-size:19px;font-weight:600}
+  header p{margin:4px 0 0;font-size:12px;opacity:.85}
+  .kpis{display:flex;flex-wrap:wrap;gap:12px;padding:14px 18px;background:#fff;border-bottom:1px solid var(--line)}
+  .kpi{flex:1;min-width:150px;background:#eef3f9;border-radius:10px;padding:12px 16px}
+  .kpi .v{font-size:26px;font-weight:700;color:var(--accent)}
+  .kpi .l{font-size:12px;color:var(--muted)}
+  nav{display:flex;flex-wrap:wrap;gap:6px;padding:10px 18px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  nav button{border:0;padding:8px 14px;border-radius:8px;background:#dbe5f1;color:var(--accent);font-size:13px;cursor:pointer}
+  nav button.active{background:var(--accent);color:#fff;font-weight:600}
+  main{padding:16px 18px}
+  .panel{display:none} .panel.active{display:block}
+  table{border-collapse:collapse;background:#fff;width:100%;box-shadow:0 1px 4px rgba(0,0,0,.06);border-radius:8px;overflow:hidden}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:center;font-size:13px}
+  th{background:var(--accent);color:#fff;font-weight:600;font-size:12px}
+  td.calc{background:#f2f4f7;color:#333}
+  input,select{font:inherit;padding:4px;border:1px solid #ccc;border-radius:5px;width:100%;background:#fff}
+  input[type=date]{min-width:120px}
+  .btn{border:0;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer}
+  .btn.add{background:#2e7d32;color:#fff;margin-bottom:12px}
+  .btn.del{background:#c0392b;color:#fff;padding:4px 8px}
+  .cal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:900px){.cal-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.cal-grid{grid-template-columns:1fr}}
+  .month{background:#fff;border-radius:8px;padding:8px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .month h3{margin:2px 0 6px;font-size:14px;color:var(--accent);text-align:center}
+  .month table{box-shadow:none}
+  .month td,.month th{padding:3px;font-size:11px;width:14.28%;height:26px}
+  .month td.we{background:#e7e6e6} .month td.empty{background:#fafafa;border-color:#f0f0f0}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+  .legend i{width:16px;height:16px;border-radius:3px;display:inline-block;border:1px solid #0002}
+  .sub{font-weight:600;background:#eef3f9}
+  .tot{font-weight:700;background:#dbe5f1}
+  .note{font-size:12px;color:var(--muted);margin:8px 0}
+  h2{font-size:16px;color:var(--accent)}
+  /* ---- mobile : la table des sessions devient des cartes ---- */
+  @media(max-width:760px){
+    body{font-size:15px}
+    header h1{font-size:17px}
+    .kpi{min-width:120px}
+    #sessTable tr:first-child{display:none}
+    #sessTable, #sessTable tbody, #sessTable tr, #sessTable td{display:block;width:100%}
+    #sessTable tr{margin-bottom:12px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    #sessTable td{border:0;display:flex;justify-content:space-between;align-items:center;text-align:right;padding:7px 8px}
+    #sessTable td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;margin-right:10px}
+    #sessTable td.calc{background:transparent}
+    #sessTable input, #sessTable select{width:auto;max-width:62%}
+    #recapTable, #sitesTable{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Planification des sessions JDC 2027</h1>
+  <p>Centre du Service National - prototype (les calculs suivent tes règles : convoqués = cap. cible × (1+taux), total = conv/groupe × nb groupes × nb jours, Nb JDC = nb groupes × nb jours)</p>
+</header>
+<div class="kpis" id="kpis"></div>
+<nav>
+  <button data-tab="sessions" class="active">Sessions</button>
+  <button data-tab="calendrier">Calendrier</button>
+  <button data-tab="recap">Récapitulatif</button>
+  <button data-tab="sites">Référentiel sites</button>
+</nav>
+<main>
+  <section class="panel active" id="sessions">
+    <button class="btn add" id="addBtn">+ Ajouter une session</button>
+    <div style="overflow-x:auto"><table id="sessTable"></table></div>
+    <p class="note">Colonnes grises = calculées automatiquement. Le site fixe le nombre de groupes, la capacité cible et le taux par défaut (modifiables par session).</p>
+  </section>
+  <section class="panel" id="calendrier">
+    <div class="legend" id="calLegend"></div>
+    <div class="cal-grid" id="calGrid"></div>
+  </section>
+  <section class="panel" id="recap">
+    <h2>Récapitulatif par période et par site</h2>
+    <div style="overflow-x:auto"><table id="recapTable"></table></div>
+    <p class="note">Nb JDC = nb groupes × nb jours. Convoqués = somme des totaux. Cohérence : Convoqués ÷ Nb JDC = convoqués par groupe.</p>
+  </section>
+  <section class="panel" id="sites">
+    <h2>Référentiel des sites</h2>
+    <div style="overflow-x:auto"><table id="sitesTable"></table></div>
+    <p class="note">Modifie ici le nombre de groupes, la capacité cible ou le taux d'un site : toutes les sessions de ce site se recalculent.</p>
+  </section>
+</main>
+
+<script>
+const PALETTE=["#A9D08E","#9DC3E6","#FFD966","#F4B183","#C9A0DC","#76D7C4","#F1948A","#5DADE2"];
+const VERT="#C6EFCE";
+const SITES={
+ "BATAILLON MIXTE DU PACIFIQUE NOUMEA":{g:3,cap:33,taux:0.22},
+ "RSMA KONE":{g:3,cap:25,taux:0.31},
+ "BASE NAVALE NOUMEA":{g:3,cap:25,taux:0.27},
+ "RIMaP NC DET NANDAI":{g:3,cap:25,taux:0.28},
+ "LYCEE POINDIMIE":{g:3,cap:25,taux:0.25},
+ "LYCEE D'ETAT WALLIS":{g:3,cap:25,taux:0.32},
+ "LYCEE POLYVALENT DES ILES LOYAUTE LIFOU":{g:3,cap:25,taux:0.36},
+ "RSMA KOUMAC":{g:3,cap:25,taux:0.28},
+ "MAIRIE DE TADINE MARE":{g:1,cap:28,taux:0.50},
+ "RIMaP NC PLUM":{g:1,cap:30,taux:0.34},
+ "CENTRE SOCIO CULTUREL LA FOA":{g:1,cap:35,taux:0.26},
+ "MAIRIE VAO-ILE DES PINS":{g:1,cap:30,taux:0.30},
+ "BA 186 TONTOUTA":{g:1,cap:25,taux:0.16}
+};
+const PERIODES=[
+ {label:"2027-1P",d:"2027-01-01",f:"2027-03-31"},
+ {label:"2027-2P",d:"2027-04-01",f:"2027-06-30"},
+ {label:"2027-3P (juil-sept)",d:"2027-07-01",f:"2027-09-30"},
+ {label:"2027-3P (oct-déc)",d:"2027-10-01",f:"2027-12-31"}
+];
+let SESS=[{"debut":"2027-01-26","fin":"2027-01-28","site":"MAIRIE DE TADINE MARE"},{"debut":"2027-02-22","fin":"2027-02-23","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-03-01","fin":"2027-03-02","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-03-08","fin":"2027-03-09","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-03-15","fin":"2027-03-16","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-03-22","fin":"2027-03-23","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-04-19","fin":"2027-04-20","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-04-26","fin":"2027-04-27","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-05-10","fin":"2027-05-11","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-05-24","fin":"2027-05-25","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-06-01","fin":"2027-06-01","site":"RIMaP NC PLUM"},{"debut":"2027-06-21","fin":"2027-06-22","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-06-29","fin":"2027-06-30","site":"RSMA KONE"},{"debut":"2027-07-05","fin":"2027-07-06","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-07-19","fin":"2027-07-19","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-07-20","fin":"2027-07-20","site":"BASE NAVALE NOUMEA"},{"debut":"2027-07-27","fin":"2027-07-28","site":"RIMaP NC DET NANDAI"},{"debut":"2027-08-02","fin":"2027-08-03","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-08-24","fin":"2027-08-25","site":"CENTRE SOCIO CULTUREL LA FOA"},{"debut":"2027-08-31","fin":"2027-09-01","site":"LYCEE POINDIMIE"},{"debut":"2027-09-06","fin":"2027-09-07","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-09-14","fin":"2027-09-16","site":"LYCEE D'ETAT WALLIS"},{"debut":"2027-09-27","fin":"2027-09-28","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-10-05","fin":"2027-10-06","site":"LYCEE POLYVALENT DES ILES LOYAUTE LIFOU"},{"debut":"2027-10-19","fin":"2027-10-20","site":"MAIRIE VAO-ILE DES PINS"},{"debut":"2027-10-25","fin":"2027-10-26","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-11-02","fin":"2027-11-03","site":"RIMaP NC DET NANDAI"},{"debut":"2027-11-16","fin":"2027-11-16","site":"BA 186 TONTOUTA"},{"debut":"2027-11-22","fin":"2027-11-23","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-11-29","fin":"2027-11-30","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"},{"debut":"2027-12-07","fin":"2027-12-09","site":"RSMA KOUMAC"},{"debut":"2027-12-13","fin":"2027-12-14","site":"BATAILLON MIXTE DU PACIFIQUE NOUMEA"}];
+// init cap/taux par session depuis le site
+SESS.forEach(s=>{const r=SITES[s.site]||{cap:25,taux:0.25};if(s.cap==null)s.cap=r.cap;if(s.taux==null)s.taux=r.taux;});
+
+const siteColor={}; Object.keys(SITES).sort().forEach((s,i)=>siteColor[s]=PALETTE[i%8]);
+function color(site){return siteColor[site]||VERT;}
+function d(s){return new Date(s+"T00:00:00");}
+function nbJours(s){if(!s.fin)return 1;const n=Math.round((d(s.fin)-d(s.debut))/86400000)+1;return n>0?n:1;}
+function nbGroupes(s){return (SITES[s.site]||{g:1}).g;}
+function M(s){return Math.round(s.cap*(1+s.taux));}
+function total(s){return M(s)*nbGroupes(s)*nbJours(s);}
+function nbJDC(s){return nbGroupes(s)*nbJours(s);}
+function periode(s){const dd=s.debut;for(const p of PERIODES){if(dd>=p.d&&dd<=p.f)return p.label;}return "?";}
+function fdate(iso){if(!iso)return"";const[y,m,day]=iso.split("-");return day+"/"+m+"/"+y;}
+
+function renderKpis(){
+ let tc=0,tj=0;SESS.forEach(s=>{tc+=total(s);tj+=nbJDC(s);});
+ document.getElementById("kpis").innerHTML=
+  kpi(tc,"Total convoqués 2027")+kpi(tj,"Total Nb JDC (groupes × jours)")+kpi(SESS.length,"Nombre de sessions");
+}
+function kpi(v,l){return `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`;}
+
+function renderSessions(){
+ const opts=Object.keys(SITES).sort().map(s=>`<option>${s}</option>`).join("");
+ let h=`<tr><th>Date début</th><th>Date fin</th><th>Site</th><th>Nb jours</th><th>Nb groupes</th><th>Cap. cible/gr</th><th>Taux</th><th>Convoqués/gr</th><th>Total convoqués</th><th>Nb JDC</th><th>Période</th><th></th></tr>`;
+ SESS.forEach((s,i)=>{
+  h+=`<tr>
+   <td data-label="Date début"><input type="date" value="${s.debut}" onchange="upd(${i},'debut',this.value)"></td>
+   <td data-label="Date fin"><input type="date" value="${s.fin}" onchange="upd(${i},'fin',this.value)"></td>
+   <td data-label="Site"><select onchange="updSite(${i},this.value)" style="min-width:160px">${opts.replace('>'+s.site+'<',' selected>'+s.site+'<')}</select></td>
+   <td class="calc" data-label="Nb jours">${nbJours(s)}</td>
+   <td class="calc" data-label="Nb groupes">${nbGroupes(s)}</td>
+   <td data-label="Cap. cible/gr"><input type="number" min="0" value="${s.cap}" style="width:70px" onchange="upd(${i},'cap',+this.value)"></td>
+   <td data-label="Taux"><input type="number" min="0" max="1" step="0.01" value="${s.taux}" style="width:70px" onchange="upd(${i},'taux',+this.value)"></td>
+   <td class="calc" data-label="Convoqués/gr">${M(s)}</td>
+   <td class="calc" data-label="Total convoqués"><b>${total(s)}</b></td>
+   <td class="calc" data-label="Nb JDC">${nbJDC(s)}</td>
+   <td class="calc" data-label="Période">${periode(s)}</td>
+   <td data-label=""><button class="btn del" onclick="del(${i})">✕ Supprimer</button></td>
+  </tr>`;
+ });
+ document.getElementById("sessTable").innerHTML=h;
+}
+function upd(i,k,v){SESS[i][k]=v;renderAll();}
+function updSite(i,v){SESS[i].site=v;const r=SITES[v];SESS[i].cap=r.cap;SESS[i].taux=r.taux;renderAll();}
+function del(i){SESS.splice(i,1);renderAll();}
+document.getElementById("addBtn").onclick=()=>{const first=Object.keys(SITES).sort()[0];const r=SITES[first];SESS.push({debut:"2027-01-01",fin:"2027-01-01",site:first,cap:r.cap,taux:r.taux,remarque:""});renderAll();switchTab("sessions");};
+
+function renderCalendar(){
+ const map={};SESS.forEach(s=>{let cur=d(s.debut),end=d(s.fin);while(cur<=end){map[cur.toISOString().slice(0,10)]=s;cur.setDate(cur.getDate()+1);}});
+ const months=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+ const wd=["Lu","Ma","Me","Je","Ve","Sa","Di"];
+ let g="";
+ for(let m=0;m<12;m++){
+  let t=`<div class="month"><h3>${months[m]}</h3><table><tr>${wd.map(x=>`<th>${x}</th>`).join("")}</tr>`;
+  const first=new Date(2027,m,1);let off=(first.getDay()+6)%7;const dim=new Date(2027,m+1,0).getDate();
+  let day=1;
+  for(let r=0;r<6&&day<=dim;r++){t+="<tr>";
+   for(let c=0;c<7;c++){
+    if((r===0&&c<off)||day>dim){t+=`<td class="empty"></td>`;}
+    else{const iso=`2027-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+     const s=map[iso];const isWe=(c>=5);
+     if(s){t+=`<td style="background:${color(s.site)}" title="${s.site} - ${total(s)} convoqués (${fdate(s.debut)}→${fdate(s.fin)})">${day}</td>`;}
+     else{t+=`<td class="${isWe?'we':''}">${day}</td>`;}
+     day++;}
+   }
+   t+="</tr>";}
+  t+="</table></div>";g+=t;
+ }
+ document.getElementById("calGrid").innerHTML=g;
+ // legende sites
+ const used=[...new Set(SESS.map(s=>s.site))].sort();
+ document.getElementById("calLegend").innerHTML=used.map(s=>`<span><i style="background:${color(s)}"></i>${s}</span>`).join("");
+}
+
+function renderRecap(){
+ let h=`<tr><th>Période</th><th>Site</th><th>Nb JDC</th><th>Convoqués</th></tr>`;
+ let gJ=0,gC=0;
+ PERIODES.forEach(p=>{
+  const agg={};SESS.filter(s=>periode(s)===p.label).forEach(s=>{agg[s.site]=agg[s.site]||{j:0,c:0};agg[s.site].j+=nbJDC(s);agg[s.site].c+=total(s);});
+  const sites=Object.keys(agg).sort();if(!sites.length)return;
+  let pJ=0,pC=0,firstR=true;
+  sites.forEach(site=>{h+=`<tr><td>${firstR?p.label:""}</td><td style="text-align:left"><i style="display:inline-block;width:12px;height:12px;background:${color(site)};border-radius:2px;margin-right:6px"></i>${site}</td><td>${agg[site].j}</td><td>${agg[site].c}</td></tr>`;pJ+=agg[site].j;pC+=agg[site].c;firstR=false;});
+  h+=`<tr class="sub"><td></td><td style="text-align:right">Sous-total ${p.label}</td><td>${pJ}</td><td>${pC}</td></tr>`;gJ+=pJ;gC+=pC;
+ });
+ h+=`<tr class="tot"><td></td><td style="text-align:right">TOTAL 2027</td><td>${gJ}</td><td>${gC}</td></tr>`;
+ document.getElementById("recapTable").innerHTML=h;
+}
+
+function renderSites(){
+ let h=`<tr><th>Site</th><th>Couleur</th><th>Nb groupes</th><th>Cap. cible/groupe</th><th>Taux absentéisme</th></tr>`;
+ Object.keys(SITES).sort().forEach(s=>{const r=SITES[s];
+  h+=`<tr><td style="text-align:left">${s}</td><td><i style="display:inline-block;width:18px;height:18px;background:${color(s)};border-radius:3px"></i></td>
+   <td><input type="number" min="1" max="3" value="${r.g}" style="width:60px" onchange="updSiteRef('${s.replace(/'/g,"\\'")}','g',+this.value)"></td>
+   <td><input type="number" min="0" value="${r.cap}" style="width:70px" onchange="updSiteRef('${s.replace(/'/g,"\\'")}','cap',+this.value)"></td>
+   <td><input type="number" min="0" max="1" step="0.01" value="${r.taux}" style="width:70px" onchange="updSiteRef('${s.replace(/'/g,"\\'")}','taux',+this.value)"></td></tr>`;
+ });
+ document.getElementById("sitesTable").innerHTML=h;
+}
+function updSiteRef(site,k,v){SITES[site][k]=v;if(k!=='g'){SESS.forEach(s=>{if(s.site===site)s[k]=v;});}renderAll();}
+
+function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderSites();}
+function switchTab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===t));}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+renderAll();
+</script>
+</body>
+</html>
