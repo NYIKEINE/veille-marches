@@ -284,43 +284,38 @@ function delPga(i){PGA.splice(i,1);renderEtat();renderAnalyse();}
 function addPga(){PGA.push({region:'',periode:'1P27',site:'',sessions:1,gps:3,groupes:3,capgr:25,capses:75,aff:0,pec:0,reg:0,att:0,taux:0,obs:''});renderEtat();renderAnalyse();document.getElementById("etatTable").scrollIntoView({behavior:"smooth",block:"start"});}
 function renderEtat(){
  pgaColors();
- const NC=16;
- let h=`<tr><th>Période</th><th>Site</th><th>Sessions</th><th>Gr./sess.</th><th>Groupes</th><th class="sep">Total cap.</th><th>Sur-conv/gr</th><th class="sep">Convoqués</th><th class="sep">Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Total demande</th><th class="sep">Reste places</th><th>Observations</th><th></th></tr>`;
+ const NC=8;
+ let h=`<tr><th>Site</th><th>Sessions</th><th>Groupes</th><th class="sep">Total convoqués</th><th>Total demande</th><th class="sep">Reste places</th><th>Observations</th><th></th></tr>`;
  const num=(i,k,w)=>`<input type="number" value="${PGA[i][k]}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
  const txt=(i,k,w)=>`<input type="text" value="${(PGA[i][k]||'').replace(/"/g,'&quot;')}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
  const chip=v=>{const bg=v<0?'#fbe3e3':(v<20?'#fdeede':'#e3f4e8'),fg=v<0?'#b02a2a':(v<20?'#b5621a':'#1e7d34');return `<span class="chip" style="background:${bg};color:${fg}">${v>=0?'+':''}${v}</span>`;};
- const subRow=(lbl,S,cls)=>`<tr class="${cls}"><td colspan="2" style="text-align:right">${lbl}</td><td>${S.se}</td><td></td><td>${S.gr}</td><td class="sep">${S.tc}</td><td></td><td class="sep">${S.cv}</td><td class="sep">${S.af}</td><td>${S.pc}</td><td>${S.rg}</td><td>${S.at}</td><td>${S.dm}</td><td class="sep">${chip(S.rs)}</td><td></td><td></td></tr>`;
+ const subRow=(lbl,S,cls)=>`<tr class="${cls}"><td style="text-align:right">${lbl}</td><td>${S.se}</td><td>${S.gr}</td><td class="sep">${S.cv}</td><td>${S.dm}</td><td class="sep">${chip(S.rs)}</td><td></td><td></td></tr>`;
  // regroupement par période en conservant l'index d'origine
  const groups={};
  PGA.forEach((r,i)=>{const key=r.periode||'(sans période)';(groups[key]=groups[key]||[]).push(i);});
  const keys=Object.keys(groups).sort();
- let G={se:0,gr:0,tc:0,cv:0,af:0,pc:0,rg:0,at:0,rs:0,dm:0};
+ let G={se:0,gr:0,cv:0,dm:0,rs:0};
  keys.forEach(key=>{
   const idxs=groups[key];
   const regs=[...new Set(idxs.map(i=>PGA[i].region).filter(Boolean))];
   // pré-calcul des lignes pour connaître le sous-total (affiché dans la bande)
-  const rows=idxs.map(i=>{const r=PGA[i],groupes=r.sessions*r.gps,totalCap=r.capses*r.sessions,surconv=r.capgr*(1+r.taux),convoques=Math.round(surconv*groupes),demande=r.aff+r.pec+r.reg+r.att,reste=convoques-demande;return {i,r,groupes,totalCap,surconv,convoques,demande,reste};});
-  let S={se:0,gr:0,tc:0,cv:0,af:0,pc:0,rg:0,at:0,rs:0,dm:0};
-  rows.forEach(o=>{S.se+=o.r.sessions;S.gr+=o.groupes;S.tc+=o.totalCap;S.cv+=o.convoques;S.af+=o.r.aff;S.pc+=o.r.pec;S.rg+=o.r.reg;S.at+=o.r.att;S.rs+=o.reste;S.dm+=o.demande;});
-  h+=`<tr class="grp"><td colspan="${NC}" style="background:#1f4e79;color:#fff;font-weight:700;text-align:left;padding:7px 10px;font-size:13px">${key}${regs.length?' — '+regs.join(' · '):''} <span style="font-weight:400;opacity:.85">(${idxs.length} site${idxs.length>1?'s':''})</span> <span style="float:right;font-weight:600">Solde : ${S.rs>=0?'+':''}${S.rs}</span></td></tr>`;
+  const rows=idxs.map(i=>{const r=PGA[i],groupes=r.sessions*r.gps,convoques=Math.round(r.capgr*(1+r.taux)*groupes),demande=r.aff+r.pec+r.reg+r.att,reste=convoques-demande;return {i,r,groupes,convoques,demande,reste};});
+  let S={se:0,gr:0,cv:0,dm:0,rs:0};
+  rows.forEach(o=>{S.se+=o.r.sessions;S.gr+=o.groupes;S.cv+=o.convoques;S.dm+=o.demande;S.rs+=o.reste;});
+  h+=`<tr class="grp"><td colspan="${NC}" style="background:#1f4e79;color:#fff;font-weight:700;text-align:left;padding:8px 10px;font-size:14px">${key}${regs.length?' — '+regs.join(' · '):''} <span style="font-weight:400;opacity:.85">(${idxs.length} site${idxs.length>1?'s':''})</span> <span style="float:right;font-weight:600">Solde : ${S.rs>=0?'+':''}${S.rs}</span></td></tr>`;
   rows.forEach((o,ri)=>{
-   const {i,r,groupes,totalCap,surconv,convoques,demande,reste}=o;
+   const {i,r,groupes,convoques,demande,reste}=o;
+   const full=SITE_MAP[r.site]||'';
    h+=`<tr class="${ri%2?'alt':''}">
-    <td data-label="Période">${txt(i,'periode',54)}</td>
-    <td data-label="Site"><i style="display:inline-block;width:10px;height:10px;background:${PGA_SITE_COL[r.site]||'#ccc'};border-radius:2px;margin-right:4px"></i>${txt(i,'site',80)}</td>
-    <td data-label="Sessions">${num(i,'sessions',46)}</td>
-    <td data-label="Gr./sess.">${num(i,'gps',46)}</td>
+    <td data-label="Site" style="text-align:left">
+     <div style="display:flex;align-items:center;gap:6px"><i style="display:inline-block;width:11px;height:11px;background:${PGA_SITE_COL[r.site]||'#ccc'};border-radius:2px;flex-shrink:0"></i><b style="font-size:13px;color:#1f4e79">${full||r.site}</b></div>
+     <div style="margin-top:4px;display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:#8a94a0">code</span>${txt(i,'site',66)}</div></td>
+    <td data-label="Sessions">${num(i,'sessions',48)}</td>
     <td class="calc" data-label="Groupes">${groupes}</td>
-    <td class="calc sep" data-label="Total cap.">${totalCap}</td>
-    <td class="calc" data-label="Sur-conv/gr">${surconv.toFixed(2)}</td>
-    <td class="calc sep" data-label="Convoqués"><b>${convoques}</b></td>
-    <td class="sep" data-label="Affectables">${num(i,'aff',52)}</td>
-    <td data-label="PEC est.">${num(i,'pec',52)}</td>
-    <td data-label="Régul.">${num(i,'reg',52)}</td>
-    <td data-label="Attente">${num(i,'att',52)}</td>
+    <td class="calc sep" data-label="Total convoqués"><b>${convoques}</b></td>
     <td class="calc" data-label="Total demande"><b>${demande}</b></td>
     <td class="calc sep" data-label="Reste places">${chip(reste)}</td>
-    <td data-label="Observations">${txt(i,'obs',130)}</td>
+    <td data-label="Observations">${txt(i,'obs',150)}</td>
     <td data-label=""><button class="btn del" onclick="delPga(${i})">✕</button></td>
    </tr>`;
   });
