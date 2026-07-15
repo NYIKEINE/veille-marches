@@ -40,10 +40,16 @@
   .legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
   .legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px}
   .legend i{width:16px;height:16px;border-radius:3px;display:inline-block;border:1px solid #0002}
-  .sub{font-weight:600;background:#eef3f9}
-  .tot{font-weight:700;background:#dbe5f1}
   .sub{font-weight:600;background:#eef3f8;color:#1f4e79}
+  .tot{font-weight:700;background:#dbe5f1}
   .grp td{border:none}
+  #etatTable td.sep, #etatTable th.sep{border-left:2px solid #b9c6d6}
+  #etatTable tr.alt td{background:#fbfcfe}
+  #etatTable tr.alt td.calc{background:#eef1f5}
+  #etatTable input{border-color:transparent;background:#f4f7fb}
+  #etatTable input:hover{border-color:#ccd6e0}
+  #etatTable input:focus{border-color:var(--accent);background:#fff}
+  .chip{display:inline-block;min-width:30px;padding:2px 8px;border-radius:11px;font-weight:700;font-size:12px}
   .note{font-size:12px;color:var(--muted);margin:8px 0}
   h2{font-size:16px;color:var(--accent)}
   h3{font-size:14px;color:var(--accent);margin:18px 0 4px}
@@ -59,6 +65,7 @@
     #sessTable td, #etatTable td{border:0;display:flex;justify-content:space-between;align-items:center;text-align:right;padding:7px 8px}
     #sessTable td::before, #etatTable td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;margin-right:10px}
     #sessTable td.calc, #etatTable td.calc{background:transparent}
+    #etatTable td.sep{border-left:0}
     #sessTable input, #sessTable select, #etatTable input{width:auto;max-width:62%}
     #recapTable, #sitesTable{font-size:13px}
     .btn.add{width:100%;padding:15px;font-size:17px}
@@ -278,10 +285,11 @@ function addPga(){PGA.push({region:'',periode:'1P27',site:'',sessions:1,gps:3,gr
 function renderEtat(){
  pgaColors();
  const NC=16;
- let h=`<tr><th>Période</th><th>Site</th><th>Sessions</th><th>Gr./sess.</th><th>Groupes</th><th>Total cap.</th><th>Sur-conv/gr</th><th>Convoqués</th><th>Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Total demande</th><th>Reste places</th><th>Observations</th><th></th></tr>`;
+ let h=`<tr><th>Période</th><th>Site</th><th>Sessions</th><th>Gr./sess.</th><th>Groupes</th><th class="sep">Total cap.</th><th>Sur-conv/gr</th><th class="sep">Convoqués</th><th class="sep">Affectables</th><th>PEC est.</th><th>Régul.</th><th>Attente</th><th>Total demande</th><th class="sep">Reste places</th><th>Observations</th><th></th></tr>`;
  const num=(i,k,w)=>`<input type="number" value="${PGA[i][k]}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
  const txt=(i,k,w)=>`<input type="text" value="${(PGA[i][k]||'').replace(/"/g,'&quot;')}" style="width:${w}px" onchange="updPga(${i},'${k}',this.value)">`;
- const subRow=(lbl,S,cls)=>`<tr class="${cls}"><td colspan="2" style="text-align:right">${lbl}</td><td>${S.se}</td><td></td><td>${S.gr}</td><td>${S.tc}</td><td></td><td>${S.cv}</td><td>${S.af}</td><td>${S.pc}</td><td>${S.rg}</td><td>${S.at}</td><td>${S.dm}</td><td style="color:${S.rs<0?'#c0392b':'#2e7d32'}">${S.rs}</td><td></td><td></td></tr>`;
+ const chip=v=>{const bg=v<0?'#fbe3e3':(v<20?'#fdeede':'#e3f4e8'),fg=v<0?'#b02a2a':(v<20?'#b5621a':'#1e7d34');return `<span class="chip" style="background:${bg};color:${fg}">${v>=0?'+':''}${v}</span>`;};
+ const subRow=(lbl,S,cls)=>`<tr class="${cls}"><td colspan="2" style="text-align:right">${lbl}</td><td>${S.se}</td><td></td><td>${S.gr}</td><td class="sep">${S.tc}</td><td></td><td class="sep">${S.cv}</td><td class="sep">${S.af}</td><td>${S.pc}</td><td>${S.rg}</td><td>${S.at}</td><td>${S.dm}</td><td class="sep">${chip(S.rs)}</td><td></td><td></td></tr>`;
  // regroupement par période en conservant l'index d'origine
  const groups={};
  PGA.forEach((r,i)=>{const key=r.periode||'(sans période)';(groups[key]=groups[key]||[]).push(i);});
@@ -290,33 +298,28 @@ function renderEtat(){
  keys.forEach(key=>{
   const idxs=groups[key];
   const regs=[...new Set(idxs.map(i=>PGA[i].region).filter(Boolean))];
-  h+=`<tr class="grp"><td colspan="${NC}" style="background:#1f4e79;color:#fff;font-weight:700;text-align:left;padding:6px 10px;font-size:13px">${key}${regs.length?' — '+regs.join(' · '):''} <span style="font-weight:400;opacity:.85">(${idxs.length} site${idxs.length>1?'s':''})</span></td></tr>`;
+  // pré-calcul des lignes pour connaître le sous-total (affiché dans la bande)
+  const rows=idxs.map(i=>{const r=PGA[i],groupes=r.sessions*r.gps,totalCap=r.capses*r.sessions,surconv=r.capgr*(1+r.taux),convoques=Math.round(surconv*groupes),demande=r.aff+r.pec+r.reg+r.att,reste=convoques-demande;return {i,r,groupes,totalCap,surconv,convoques,demande,reste};});
   let S={se:0,gr:0,tc:0,cv:0,af:0,pc:0,rg:0,at:0,rs:0,dm:0};
-  idxs.forEach(i=>{
-   const r=PGA[i];
-   const groupes=r.sessions*r.gps;
-   const totalCap=r.capses*r.sessions;
-   const surconv=r.capgr*(1+r.taux);
-   const convoques=Math.round(surconv*groupes);
-   const demande=r.aff+r.pec+r.reg+r.att;
-   const reste=convoques-demande;
-   const rc=reste<0?'#c0392b':(reste<20?'#e67e22':'#2e7d32');
-   S.se+=r.sessions;S.gr+=groupes;S.tc+=totalCap;S.cv+=convoques;S.af+=r.aff;S.pc+=r.pec;S.rg+=r.reg;S.at+=r.att;S.rs+=reste;S.dm+=demande;
-   h+=`<tr>
+  rows.forEach(o=>{S.se+=o.r.sessions;S.gr+=o.groupes;S.tc+=o.totalCap;S.cv+=o.convoques;S.af+=o.r.aff;S.pc+=o.r.pec;S.rg+=o.r.reg;S.at+=o.r.att;S.rs+=o.reste;S.dm+=o.demande;});
+  h+=`<tr class="grp"><td colspan="${NC}" style="background:#1f4e79;color:#fff;font-weight:700;text-align:left;padding:7px 10px;font-size:13px">${key}${regs.length?' — '+regs.join(' · '):''} <span style="font-weight:400;opacity:.85">(${idxs.length} site${idxs.length>1?'s':''})</span> <span style="float:right;font-weight:600">Solde : ${S.rs>=0?'+':''}${S.rs}</span></td></tr>`;
+  rows.forEach((o,ri)=>{
+   const {i,r,groupes,totalCap,surconv,convoques,demande,reste}=o;
+   h+=`<tr class="${ri%2?'alt':''}">
     <td data-label="Période">${txt(i,'periode',54)}</td>
     <td data-label="Site"><i style="display:inline-block;width:10px;height:10px;background:${PGA_SITE_COL[r.site]||'#ccc'};border-radius:2px;margin-right:4px"></i>${txt(i,'site',80)}</td>
     <td data-label="Sessions">${num(i,'sessions',46)}</td>
     <td data-label="Gr./sess.">${num(i,'gps',46)}</td>
     <td class="calc" data-label="Groupes">${groupes}</td>
-    <td class="calc" data-label="Total cap.">${totalCap}</td>
+    <td class="calc sep" data-label="Total cap.">${totalCap}</td>
     <td class="calc" data-label="Sur-conv/gr">${surconv.toFixed(2)}</td>
-    <td class="calc" data-label="Convoqués"><b>${convoques}</b></td>
-    <td data-label="Affectables">${num(i,'aff',52)}</td>
+    <td class="calc sep" data-label="Convoqués"><b>${convoques}</b></td>
+    <td class="sep" data-label="Affectables">${num(i,'aff',52)}</td>
     <td data-label="PEC est.">${num(i,'pec',52)}</td>
     <td data-label="Régul.">${num(i,'reg',52)}</td>
     <td data-label="Attente">${num(i,'att',52)}</td>
     <td class="calc" data-label="Total demande"><b>${demande}</b></td>
-    <td class="calc" data-label="Reste places" style="color:${rc};font-weight:700">${reste}</td>
+    <td class="calc sep" data-label="Reste places">${chip(reste)}</td>
     <td data-label="Observations">${txt(i,'obs',130)}</td>
     <td data-label=""><button class="btn del" onclick="delPga(${i})">✕</button></td>
    </tr>`;
