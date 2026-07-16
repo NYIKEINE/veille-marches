@@ -100,6 +100,26 @@
   #procedure ul.pr-check li{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px 8px 34px;margin:5px 0;position:relative}
   #procedure ul.pr-check li::before{content:"\2610";position:absolute;left:12px;top:7px;color:var(--accent);font-size:15px}
   @media(max-width:600px){#procedure .pr-flow .st{flex-basis:45%}}
+  /* lecteur animé */
+  #procedure .pr-anim{background:linear-gradient(120deg,#12324e,#1f4e79);border-radius:14px;padding:18px 20px;margin:14px 0;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+  #procedure .pa-stage{min-height:250px;position:relative;overflow:hidden}
+  #procedure .pa-slide{animation:paIn .5s ease}
+  #procedure .pa-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+  #procedure .pa-num{width:48px;height:48px;border-radius:50%;background:#fff;color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex-shrink:0}
+  #procedure .pa-title{font-size:19px;font-weight:700}
+  #procedure .pa-goal{font-size:13px;opacity:.85}
+  #procedure .pa-line{opacity:0;transform:translateY(10px);animation:paLine .5s ease forwards;margin:9px 0;font-size:15px}
+  #procedure .pr-anim .pr-formula{background:rgba(0,0,0,.30);color:#eaf2fb;margin:6px 0}
+  #procedure .pa-ex{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);border-radius:10px;padding:8px 13px;font-size:16px;display:inline-block}
+  #procedure .pa-bar{height:6px;background:rgba(255,255,255,.22);border-radius:4px;margin:12px 0 10px;overflow:hidden}
+  #procedure .pa-fill{height:100%;background:#ffd966;width:14%;transition:width .5s ease;border-radius:4px}
+  #procedure .pa-dots{display:flex;gap:7px;justify-content:center;margin-bottom:12px}
+  #procedure .pa-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.35);cursor:pointer;transition:transform .2s,background .2s}
+  #procedure .pa-dots i.on{background:#ffd966;transform:scale(1.3)}
+  #procedure .pa-ctrl{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  #procedure .pa-ctrl .btn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);color:#fff}
+  @keyframes paIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+  @keyframes paLine{to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
@@ -158,6 +178,16 @@
   </section>
   <section class="panel" id="procedure">
     <h2>Préparer la PGA, pas à pas</h2>
+    <div class="pr-anim">
+     <div class="pa-stage" id="paStage"></div>
+     <div class="pa-bar"><div class="pa-fill" id="paFill"></div></div>
+     <div class="pa-dots" id="paDots"></div>
+     <div class="pa-ctrl">
+      <button class="btn" onclick="paPrev()">‹ Précédent</button>
+      <button class="btn" id="paPlayBtn" onclick="paToggle()">▶ Lecture auto</button>
+      <button class="btn" onclick="paNext()">Suivant ›</button>
+     </div>
+    </div>
     <div class="pr-lead"><b>PGA = Plan Général d'Adonnement.</b> C'est le document qui décide, pour chaque site JDC et chaque période, <b>combien de sessions ouvrir</b>. Le principe : on part du <b>nombre de jeunes à convoquer</b>, on le compare à ce qu'une <b>session peut absorber</b>, et on en déduit le <b>nombre de sessions</b>.</div>
 
     <h3>Les 7 étapes du processus</h3>
@@ -500,8 +530,66 @@ function renderAnalyse(){
 }
 
 function renderAll(){renderKpis();renderSessions();renderCalendar();renderRecap();renderEtat();renderAnalyse();renderSites();}
-function switchTab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===t));}
+function switchTab(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===t));if(t==='procedure'){paRender(paIndex);}else{paStop();}}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+
+// ---- lecteur animé de la procédure ----
+const paSteps=[
+ {n:1,t:"Poser le cadre",g:"Sur quelle période travaille-t-on ?",lines:[
+  "L'année a 3 périodes de convocation (PPA) :",
+  "<b>1P</b> jan-mars &nbsp;·&nbsp; <b>2P</b> avr-juin &nbsp;·&nbsp; <b>3P</b> juil-déc",
+  "Convocable si né avant la date d'âge limite et âgé de 17 ans.",
+  "<div class='pa-ex'>On travaille sur <b>1P27</b></div>"]},
+ {n:2,t:"Chiffrer la demande",g:"Combien de jeunes à convoquer ?",lines:[
+  "<div class='pr-formula'>Demande = Affectables + PEC + Régularisés + Attente</div>",
+  "Comptés par commune, regroupés par site.",
+  "Centre A : 150 + 40 + 15 + 5",
+  "<div class='pa-ex'>Demande = <b>210 jeunes</b></div>"]},
+ {n:3,t:"Poser les paramètres du site",g:"Les 3 réglages du site.",lines:[
+  "Nombre de groupes (1 ou 3), capacité cible/groupe, taux d'absentéisme.",
+  "Issus du référentiel des sites.",
+  "<div class='pa-ex'>Centre A : <b>3 groupes</b> · cap. <b>20/gr</b> · taux <b>25 %</b></div>"]},
+ {n:4,t:"Calculer la sur-convocation",g:"On convoque plus que la cible.",lines:[
+  "<div class='pr-formula'>Sur-convoc./groupe = Capacité × (1 + taux)</div>",
+  "20 × 1,25 = <b>25</b> par groupe",
+  "Capacité session = 25 × 3 groupes = <b>75</b>",
+  "<div class='pa-ex'>Une session absorbe <b>75 convoqués</b></div>"]},
+ {n:5,t:"Nombre de sessions à ouvrir",g:"Le cœur de la PGA.",lines:[
+  "<div class='pr-formula'>Sessions = Demande ÷ Capacité session&nbsp;&nbsp;(arrondi ↑)</div>",
+  "210 ÷ 75 = 2,8",
+  "<div class='pa-ex'>→ on ouvre <b>3 sessions</b></div>"]},
+ {n:6,t:"Vérifier l'équilibre",g:"Assez de places, sans excès.",lines:[
+  "<div class='pr-formula'>Reste places = Convoqués − Demande</div>",
+  "Convoqués = 25 × 3 × 3 sessions = <b>225</b>",
+  "225 − 210 = <span class='pr-badge b-green'>+15</span>",
+  "<div class='pa-ex'>Marge confortable : PGA équilibrée</div>"]},
+ {n:7,t:"Calendrier et convocations",g:"Le résultat concret.",lines:[
+  "On pose les 3 sessions sur des dates réelles.",
+  "On vérifie fériés, week-ends et vacances (calendrier coloré).",
+  "On édite les convocations des jeunes du site.",
+  "<div class='pa-ex'>Convocations éditées ✅</div>"]}
+];
+let paIndex=0, paTimer=null;
+function paRender(i){
+ paIndex=(i+paSteps.length)%paSteps.length;
+ const s=paSteps[paIndex];
+ const lines=s.lines.map((l,idx)=>`<div class="pa-line" style="animation-delay:${(idx*0.45+0.25).toFixed(2)}s">${l}</div>`).join("");
+ const st=document.getElementById("paStage"); if(!st)return;
+ st.innerHTML=`<div class="pa-slide"><div class="pa-top"><span class="pa-num">${s.n}</span><div><div class="pa-title">${s.t}</div><div class="pa-goal">${s.g}</div></div></div><div>${lines}</div></div>`;
+ document.getElementById("paFill").style.width=((paIndex+1)/paSteps.length*100).toFixed(0)+"%";
+ document.getElementById("paDots").innerHTML=paSteps.map((_,k)=>`<i class="${k===paIndex?'on':''}" onclick="paGo(${k})"></i>`).join("");
+}
+function paGo(k){paStop();paRender(k);}
+function paNext(){if(paIndex>=paSteps.length-1){paStop();return;}paRender(paIndex+1);}
+function paPrev(){paStop();paRender(paIndex-1);}
+function paStop(){if(paTimer){clearInterval(paTimer);paTimer=null;}const b=document.getElementById("paPlayBtn");if(b)b.textContent="▶ Lecture auto";}
+function paToggle(){
+ if(paTimer){paStop();return;}
+ const b=document.getElementById("paPlayBtn");if(b)b.textContent="⏸ Pause";
+ if(paIndex>=paSteps.length-1)paRender(0);
+ paTimer=setInterval(()=>{if(paIndex>=paSteps.length-1){paStop();}else{paRender(paIndex+1);}},3500);
+}
+paRender(0);
 renderAll();
 </script>
 </body>
