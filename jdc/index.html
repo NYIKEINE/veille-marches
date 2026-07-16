@@ -178,16 +178,6 @@
   </section>
   <section class="panel" id="procedure">
     <h2>Préparer la PGA, pas à pas</h2>
-    <div class="pr-anim">
-     <div class="pa-stage" id="paStage"></div>
-     <div class="pa-bar"><div class="pa-fill" id="paFill"></div></div>
-     <div class="pa-dots" id="paDots"></div>
-     <div class="pa-ctrl">
-      <button class="btn" onclick="paPrev()">‹ Précédent</button>
-      <button class="btn" id="paPlayBtn" onclick="paToggle()">▶ Lecture auto</button>
-      <button class="btn" onclick="paNext()">Suivant ›</button>
-     </div>
-    </div>
     <div class="pr-lead"><b>PGA = Plan Général d'Adonnement.</b> C'est le document qui décide, pour chaque site JDC et chaque période, <b>combien de sessions ouvrir</b>. Le principe : on part du <b>nombre de jeunes à convoquer</b>, on le compare à ce qu'une <b>session peut absorber</b>, et on en déduit le <b>nombre de sessions</b>.</div>
 
     <h3>Les 7 étapes du processus</h3>
@@ -280,6 +270,19 @@
     </ol>
 
     <p class="note">Dans cette application : les étapes 3 à 6 se font dans l'onglet <b>État convocations</b>, les étapes 6 à 7 dans les onglets <b>Sessions</b> et <b>Calendrier</b>.</p>
+
+    <h3>Version animée</h3>
+    <p class="note">Déroule la procédure étape par étape. Utilise « Lecture auto » ou avance à ton rythme.</p>
+    <div class="pr-anim">
+     <div class="pa-stage" id="paStage"></div>
+     <div class="pa-bar"><div class="pa-fill" id="paFill"></div></div>
+     <div class="pa-dots" id="paDots"></div>
+     <div class="pa-ctrl">
+      <button class="btn" onclick="paPrev()">‹ Précédent</button>
+      <button class="btn" id="paPlayBtn" onclick="paToggle()">▶ Lecture auto</button>
+      <button class="btn" onclick="paNext()">Suivant ›</button>
+     </div>
+    </div>
   </section>
 </main>
 
