@@ -73,6 +73,33 @@
   .btn.add{font-size:15px;font-weight:600}
   @keyframes flash{0%{background:#c8e6c9}100%{background:#fff}}
   .new-row{animation:flash 2s ease}
+  /* ---- onglet Procédure ---- */
+  #procedure .pr-lead{background:#eef3f8;border-left:5px solid var(--accent);padding:12px 16px;border-radius:6px;margin:14px 0;font-size:15px}
+  #procedure .pr-lead.green{background:#eef6ee;border-color:#2e7d32}
+  #procedure .pr-flow{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  #procedure .pr-flow .st{flex:1 1 110px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}
+  #procedure .pr-flow .n{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:5px}
+  #procedure .pr-flow .st small{display:block;font-size:12px;color:var(--muted)}
+  #procedure .pr-flow .st b{font-size:13px}
+  #procedure .pr-step{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+  #procedure .pr-step .hd{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  #procedure .pr-step .num{flex-shrink:0;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px}
+  #procedure .pr-step h3{margin:0}
+  #procedure .pr-goal{color:var(--muted);font-style:italic;margin:4px 0}
+  #procedure .pr-formula{background:#0f2537;color:#eaf2fb;border-radius:8px;padding:11px 15px;margin:10px 0;font-family:Consolas,"Courier New",monospace;font-size:14px;overflow-x:auto;line-height:1.7}
+  #procedure .pr-formula .hl{color:#ffd966;font-weight:700}
+  #procedure .pr-ex{background:#eef6ee;border:1px solid #bfe0c4;border-radius:10px;padding:10px 14px;margin:10px 0}
+  #procedure .pr-ex .tag{display:inline-block;background:#2e7d32;color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;margin-bottom:6px}
+  #procedure .pr-ex .calc{font-family:Consolas,"Courier New",monospace;font-size:14px;margin:3px 0}
+  #procedure .pr-ex .res{font-weight:700;color:var(--accent)}
+  #procedure .pr-badge{display:inline-block;min-width:30px;text-align:center;padding:2px 9px;border-radius:11px;font-weight:700;font-size:13px}
+  #procedure .b-green{background:#e3f4e8;color:#2e7d32}
+  #procedure .b-orange{background:#fdeede;color:#b5621a}
+  #procedure .b-red{background:#fbe3e3;color:#b02a2a}
+  #procedure ul.pr-check{list-style:none;padding:0;margin:8px 0}
+  #procedure ul.pr-check li{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px 8px 34px;margin:5px 0;position:relative}
+  #procedure ul.pr-check li::before{content:"\2610";position:absolute;left:12px;top:7px;color:var(--accent);font-size:15px}
+  @media(max-width:600px){#procedure .pr-flow .st{flex-basis:45%}}
 </style>
 </head>
 <body>
@@ -88,6 +115,7 @@
   <button data-tab="etat">État convocations</button>
   <button data-tab="analyse">Analyse</button>
   <button data-tab="sites">Référentiel sites</button>
+  <button data-tab="procedure">Procédure</button>
 </nav>
 <main>
   <section class="panel active" id="sessions">
@@ -127,6 +155,101 @@
     <h2>Référentiel des sites</h2>
     <div style="overflow-x:auto"><table id="sitesTable"></table></div>
     <p class="note">Modifie ici le nombre de groupes, la capacité cible ou le taux d'un site : toutes les sessions de ce site se recalculent.</p>
+  </section>
+  <section class="panel" id="procedure">
+    <h2>Préparer la PGA, pas à pas</h2>
+    <div class="pr-lead"><b>PGA = Plan Général d'Adonnement.</b> C'est le document qui décide, pour chaque site JDC et chaque période, <b>combien de sessions ouvrir</b>. Le principe : on part du <b>nombre de jeunes à convoquer</b>, on le compare à ce qu'une <b>session peut absorber</b>, et on en déduit le <b>nombre de sessions</b>.</div>
+
+    <h3>Les 7 étapes du processus</h3>
+    <div class="pr-flow">
+     <div class="st"><span class="n">1</span><b>Cadre</b><small>les périodes</small></div>
+     <div class="st"><span class="n">2</span><b>Demande</b><small>qui convoquer</small></div>
+     <div class="st"><span class="n">3</span><b>Paramètres</b><small>par site</small></div>
+     <div class="st"><span class="n">4</span><b>Sur-convoc.</b><small>capacité</small></div>
+     <div class="st"><span class="n">5</span><b>Sessions</b><small>combien ouvrir</small></div>
+     <div class="st"><span class="n">6</span><b>Équilibre</b><small>reste places</small></div>
+     <div class="st"><span class="n">7</span><b>Convocations</b><small>le résultat</small></div>
+    </div>
+
+    <div class="pr-lead green"><b>Exemple fil rouge.</b> On prépare la période <b>1P27</b> pour le <b>« Centre A »</b> : sessions de <b>3 groupes</b>, capacité cible <b>20 jeunes / groupe</b>, taux d'absentéisme <b>25 %</b>. Des chiffres ronds pour bien suivre chaque calcul.</div>
+
+    <div class="pr-step"><div class="hd"><div class="num">1</div><h3>Poser le cadre (les périodes)</h3></div>
+     <p class="pr-goal">Objectif : savoir sur quelle fenêtre on travaille et qui est convocable.</p>
+     <p>3 périodes de convocation (PPA) : <b>1P</b> janvier-mars, <b>2P</b> avril-juin, <b>3P</b> juillet-décembre (2 trimestres). Chaque période a une <b>date d'âge limite</b> : convocable si né avant cette date et âgé de 17 ans.</p>
+     <div class="pr-ex"><span class="tag">Exemple</span><div>On se place en <b>1P27</b>.</div></div>
+    </div>
+
+    <div class="pr-step"><div class="hd"><div class="num">2</div><h3>Chiffrer la demande (qui convoquer)</h3></div>
+     <p class="pr-goal">Objectif : le nombre total de jeunes à convoquer, par site.</p>
+     <div class="pr-formula">Demande = <span class="hl">Affectables</span> + <span class="hl">PEC estimée</span> + <span class="hl">Régularisés</span> + <span class="hl">En attente</span></div>
+     <p><b>Point clé :</b> les jeunes sont comptés par commune, puis regroupés par site via l'association <b>commune → site</b>, qui peut <b>changer selon la période</b>.</p>
+     <div class="pr-ex"><span class="tag">Exemple</span>
+      <div class="calc">150 + 40 + 15 + 5</div>
+      <div class="res">Demande du Centre A = 210 jeunes</div></div>
+    </div>
+
+    <div class="pr-step"><div class="hd"><div class="num">3</div><h3>Poser les paramètres du site</h3></div>
+     <p class="pr-goal">Objectif : les 3 réglages qui caractérisent un site.</p>
+     <p>Nombre de groupes (1 ou 3), capacité cible par groupe (présents visés), taux d'absentéisme (historique du site). Stockés dans le <b>référentiel des sites</b>.</p>
+     <div class="pr-ex"><span class="tag">Exemple</span><div>Centre A : <b>3 groupes</b>, capacité <b>20 / groupe</b>, taux <b>25 %</b>.</div></div>
+    </div>
+
+    <div class="pr-step"><div class="hd"><div class="num">4</div><h3>Calculer la sur-convocation</h3></div>
+     <p class="pr-goal">Objectif : convoquer plus que la cible, car des jeunes ne viennent pas.</p>
+     <div class="pr-formula">Sur-convoc. / groupe = <span class="hl">Capacité cible</span> × (1 + <span class="hl">taux</span>)<br>Capacité d'une session = Sur-convoc. / groupe × <span class="hl">Nombre de groupes</span></div>
+     <div class="pr-ex"><span class="tag">Exemple</span>
+      <div class="calc">20 × 1,25 = <b>25</b> par groupe</div>
+      <div class="calc">25 × 3 groupes = <span class="res">75 convoqués / session</span></div>
+      <div style="font-size:13px;color:var(--muted)">Pour 60 présents visés (3 × 20), on convoque 75 jeunes.</div></div>
+    </div>
+
+    <div class="pr-step"><div class="hd"><div class="num">5</div><h3>Déterminer le nombre de sessions (le cœur de la PGA)</h3></div>
+     <p class="pr-goal">Objectif : demande ÷ capacité d'une session, arrondi au supérieur.</p>
+     <div class="pr-formula">Nombre de sessions = <span class="hl">Demande</span> ÷ <span class="hl">Capacité d'une session</span>&nbsp;&nbsp;(arrondi au supérieur)</div>
+     <div class="pr-ex"><span class="tag">Exemple</span>
+      <div class="calc">210 ÷ 75 = 2,8&nbsp;→ arrondi au supérieur</div>
+      <div class="res">On ouvre 3 sessions au Centre A</div></div>
+    </div>
+
+    <div class="pr-step"><div class="hd"><div class="num">6</div><h3>Vérifier l'équilibre (le reste places)</h3></div>
+     <p class="pr-goal">Objectif : assez de places, sans trop en ouvrir.</p>
+     <div class="pr-formula">Nb convoqués = Sur-convoc. / groupe × Groupes × <span class="hl">Sessions</span><br>Reste places = <span class="hl">Nb convoqués</span> − <span class="hl">Demande</span></div>
+     <p><span class="pr-badge b-red">négatif</span> il manque des places → ajouter une session &nbsp; <span class="pr-badge b-orange">+ faible</span> serré &nbsp; <span class="pr-badge b-green">+ ≥ 20</span> marge confortable</p>
+     <div class="pr-ex"><span class="tag">Exemple</span>
+      <div class="calc">25 × 3 × 3 sessions = <b>225</b> convoqués</div>
+      <div class="calc">225 − 210 = <span class="pr-badge b-green">+15</span> &nbsp; PGA équilibrée</div></div>
+    </div>
+
+    <div class="pr-step"><div class="hd"><div class="num">7</div><h3>Poser le calendrier et éditer les convocations</h3></div>
+     <p class="pr-goal">Objectif : transformer « 3 sessions en 1P27 » en dates concrètes.</p>
+     <p>On place les sessions sur des dates réelles, on vérifie fériés, week-ends et vacances sur le calendrier coloré par site, puis on édite les convocations.</p>
+    </div>
+
+    <h3>Toutes les formules en un coup d'œil</h3>
+    <div class="pr-formula">Demande&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= Affectables + PEC + Régularisés + En attente<br>Sur-convoc. / gr.&nbsp;= Capacité cible × (1 + taux)<br>Capacité session&nbsp;= Sur-convoc. / groupe × Nombre de groupes<br>Nb de sessions&nbsp;&nbsp;= Demande ÷ Capacité session&nbsp;&nbsp;(arrondi au supérieur)<br>Nb convoqués&nbsp;&nbsp;&nbsp;&nbsp;= Sur-convoc. / groupe × Groupes × Sessions<br>Reste places&nbsp;&nbsp;&nbsp;&nbsp;= Nb convoqués − Demande</div>
+
+    <h3>Check-list de préparation</h3>
+    <ul class="pr-check">
+     <li>Période choisie (1P / 2P / 3P) et date d'âge limite connue</li>
+     <li>Demande chiffrée par commune puis regroupée par site (association à jour)</li>
+     <li>Paramètres de chaque site à jour (groupes, capacité, taux)</li>
+     <li>Sur-convocation et capacité de session calculées</li>
+     <li>Nombre de sessions déterminé (arrondi au supérieur)</li>
+     <li>Reste places vérifié (aucun rouge)</li>
+     <li>Sessions posées sur le calendrier</li>
+     <li>Convocations éditées</li>
+    </ul>
+
+    <h3>Les pièges à éviter</h3>
+    <ol>
+     <li><b>Association commune → site non à jour</b> pour la période : une commune peut changer de site d'une période à l'autre. Erreur la plus fréquente.</li>
+     <li><b>Confondre convoqués et présents</b> : la capacité cible, c'est le nombre de présents visé ; on convoque toujours plus.</li>
+     <li><b>Arrondir au mauvais moment</b> : le nombre de sessions s'arrondit au supérieur ; la sur-convocation reste non arrondie dans la PGA.</li>
+     <li><b>Se tromper de taux</b> : le taux vient de l'historique et est propre à chaque site.</li>
+     <li><b>Format de date</b> : toujours jour/mois/année.</li>
+    </ol>
+
+    <p class="note">Dans cette application : les étapes 3 à 6 se font dans l'onglet <b>État convocations</b>, les étapes 6 à 7 dans les onglets <b>Sessions</b> et <b>Calendrier</b>.</p>
   </section>
 </main>
 
